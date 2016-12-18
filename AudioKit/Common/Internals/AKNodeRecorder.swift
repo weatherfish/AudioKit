@@ -123,7 +123,7 @@ import AVFoundation
             
             // Sets AVAudioSession Category to be Play and Record
             
-            if (AKSettings.session.category != AKSettings.SessionCategory.playAndRecord.rawValue) {
+            if AKSettings.session.category != AKSettings.SessionCategory.playAndRecord.rawValue {
                 do {
                     try AKSettings.setSession(category: .playAndRecord)
                 } catch let error as NSError {
@@ -140,22 +140,24 @@ import AVFoundation
             recording = true
             
             print("AKNodeRecorder: recording")
-            node!.avAudioNode.installTap(onBus: 0, bufferSize: recordingBufferLength,
-                                         format: internalAudioFile.processingFormat) {
-                                            (buffer: AVAudioPCMBuffer!, time: AVAudioTime!) -> Void in
-                                            do {
-                                                self.recordBufferDuration = Double(buffer.frameLength) / AKSettings.sampleRate
-                                                try self.internalAudioFile.write(from: buffer)
-                                                print("AKNodeRecorder writing (file duration: \(self.internalAudioFile.duration) seconds)")
-                                                
-                                                // allow an optional timed stop
-                                                if self.durationToRecord != 0 && self.internalAudioFile.duration >= self.durationToRecord {
-                                                    self.stop()
-                                                }
-                                                
-                                            } catch let error as NSError {
-                                                print("Write failed: error -> \(error.localizedDescription)")
-                                            }
+            node!.avAudioNode.installTap(
+                onBus: 0,
+                bufferSize: recordingBufferLength,
+                format: internalAudioFile.processingFormat) {
+                    (buffer: AVAudioPCMBuffer!, time: AVAudioTime!) -> Void in
+                    do {
+                        self.recordBufferDuration = Double(buffer.frameLength) / AKSettings.sampleRate
+                        try self.internalAudioFile.write(from: buffer)
+                        print("AKNodeRecorder writing (file duration: \(self.internalAudioFile.duration) seconds)")
+                        
+                        // allow an optional timed stop
+                        if self.durationToRecord != 0 && self.internalAudioFile.duration >= self.durationToRecord {
+                            self.stop()
+                        }
+                        
+                    } catch let error as NSError {
+                        print("Write failed: error -> \(error.localizedDescription)")
+                    }
             }
         } else {
             print("AKNodeRecorder Error: input node is not available")

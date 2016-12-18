@@ -104,10 +104,11 @@ import AVFoundation
     /// Shortcut for AVAudioSession.sharedInstance()
     open static let session = AVAudioSession.sharedInstance()
 
+    /// Set the audio session type
     open static func setSession(category: SessionCategory,
                                 with options: AVAudioSessionCategoryOptions? = nil ) throws {
         
-        if AKSettings.disableAVAudioSessionCategoryManagement == false {
+        if !AKSettings.disableAVAudioSessionCategoryManagement {
             
             if options != nil {
                 do {

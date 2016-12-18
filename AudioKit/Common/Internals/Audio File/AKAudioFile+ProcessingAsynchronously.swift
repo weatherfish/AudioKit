@@ -211,7 +211,7 @@ extension AKAudioFile {
 
         ProcessFactory.sharedInstance.queueAppendAsyncProcess(
             sourceFile: self,
-            appendedFile:file,
+            appendedFile: file,
             baseDir: baseDir,
             name: name,
             completionHandler: completionHandler
@@ -717,7 +717,7 @@ extension AKAudioFile {
         fileprivate static func queueExportSession(session: ExportSession) {
             exportSessionsArray[session.idStamp] = session
 
-            if isExporting == false {
+            if !isExporting {
                 isExporting = true
                 currentExportProcessId = session.idStamp
                 print("ExportFactory: exporting session #\(session.idStamp)")
