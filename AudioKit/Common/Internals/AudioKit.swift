@@ -108,14 +108,12 @@ extension AVAudioEngine {
     /// Change the preferred output device, giving it one of the names from the list of available output.
     open static func setOutputDevice(_ output: AKDevice) throws {
         #if os(OSX)
-            var address = AudioObjectPropertyAddress(
-                mSelector: kAudioHardwarePropertyDefaultOutputDevice,
-                mScope: kAudioObjectPropertyScopeGlobal,
-                mElement: kAudioObjectPropertyElementMaster)
-            var devid = output.deviceID
-            AudioObjectSetPropertyData(
-                AudioObjectID(kAudioObjectSystemObject),
-                &address, 0, nil, UInt32(MemoryLayout<AudioDeviceID>.size), &devid)
+            var id = output.deviceID
+            AudioUnitSetProperty(AudioKit.engine.outputNode.audioUnit!,
+                                 kAudioOutputUnitProperty_CurrentDevice,
+                                 kAudioUnitScope_Global, 0,
+                                 &id,
+                                 UInt32(MemoryLayout<DeviceID>.size))
         #else
             //not available on ios
         #endif
@@ -201,7 +199,7 @@ extension AVAudioEngine {
         do {
             try AVAudioSession.sharedInstance().setActive(false)
         } catch {
-            print("couldn't stop session \(error)")
+            AKLog("couldn't stop session \(error)")
         }
         #endif
     }
@@ -254,9 +252,9 @@ extension AVAudioEngine {
 
         if shouldBeRunning && !engine.isRunning {
             do {
-                try self.engine.start()
+                try engine.start()
             } catch {
-                print("couldn't start engine after configuration change \(error)")
+                AKLog("couldn't start engine after configuration change \(error)")
             }
         }
 
@@ -276,7 +274,7 @@ extension AVAudioEngine {
 
                 }
             } catch {
-                print("error restarting engine after route change")
+                AKLog("error restarting engine after route change")
             }
         }
     }

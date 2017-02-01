@@ -6,8 +6,7 @@
 //  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
 //
 
-#ifndef AKMorphingOscillatorDSPKernel_hpp
-#define AKMorphingOscillatorDSPKernel_hpp
+#pragma once
 
 #import "DSPKernel.hpp"
 #import "ParameterRamper.hpp"
@@ -26,20 +25,15 @@ enum {
     detuningMultiplierAddress = 4
 };
 
-class AKMorphingOscillatorDSPKernel : public DSPKernel {
+class AKMorphingOscillatorDSPKernel : public AKSporthKernel, public AKOutputBuffered {
 public:
     // MARK: Member Functions
 
     AKMorphingOscillatorDSPKernel() {}
 
-    void init(int channelCount, double inSampleRate) {
-        channels = channelCount;
+    void init(int _channels, double _sampleRate) override {
+        AKSporthKernel::init(_channels, _sampleRate);
 
-        sampleRate = float(inSampleRate);
-
-        sp_create(&sp);
-        sp->sr = sampleRate;
-        sp->nchan = channels;
         sp_oscmorph_create(&oscmorph);
 
         frequencyRamper.init();
@@ -68,7 +62,7 @@ public:
 
     void destroy() {
         sp_oscmorph_destroy(&oscmorph);
-        sp_destroy(&sp);
+        AKSporthKernel::destroy();
     }
 
     void reset() {
@@ -181,10 +175,6 @@ public:
         }
     }
 
-    void setBuffer(AudioBufferList *outBufferList) {
-        outBufferListPtr = outBufferList;
-    }
-
     void process(AUAudioFrameCount frameCount, AUAudioFrameCount bufferOffset) override {
 
         for (int frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
@@ -219,12 +209,7 @@ public:
     // MARK: Member Variables
 
 private:
-    int channels = AKSettings.numberOfChannels;
-    float sampleRate = AKSettings.sampleRate;
 
-    AudioBufferList *outBufferListPtr = nullptr;
-
-    sp_data *sp;
     sp_oscmorph *oscmorph;
     
     sp_ftbl *ft_array[4];
@@ -246,4 +231,4 @@ public:
     ParameterRamper detuningMultiplierRamper = 1.0;
 };
 
-#endif /* AKMorphingOscillatorDSPKernel_hpp */
+

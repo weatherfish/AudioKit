@@ -6,9 +6,7 @@
 //  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
 //
 
-#ifndef AKPhaseLockedVocoderDSPKernel_hpp
-#define AKPhaseLockedVocoderDSPKernel_hpp
-
+#pragma once
 #import "DSPKernel.hpp"
 #import "ParameterRamper.hpp"
 
@@ -24,20 +22,15 @@ enum {
     pitchRatioAddress = 2
 };
 
-class AKPhaseLockedVocoderDSPKernel : public DSPKernel {
+class AKPhaseLockedVocoderDSPKernel : public AKSporthKernel, public AKOutputBuffered {
 public:
     // MARK: Member Functions
 
     AKPhaseLockedVocoderDSPKernel() {}
 
-    void init(int channelCount, double inSampleRate) {
-        channels = channelCount;
+    void init(int _channels, double _sampleRate) override {
+        AKSporthKernel::init(_channels, _sampleRate);
 
-        sampleRate = float(inSampleRate);
-
-        sp_create(&sp);
-        sp->sr = sampleRate;
-        sp->nchan = channels;
         sp_mincer_create(&mincer);
 
         positionRamper.init();
@@ -65,7 +58,7 @@ public:
 
     void destroy() {
         sp_mincer_destroy(&mincer);
-        sp_destroy(&sp);
+        AKSporthKernel::destroy();
     }
 
     void reset() {
@@ -76,7 +69,7 @@ public:
     }
 
     void setPosition(float value) {
-        position = clamp(value, 0.0f, 1.0f);
+        position = value;
         positionRamper.setImmediate(position);
     }
 
@@ -94,7 +87,7 @@ public:
     void setParameter(AUParameterAddress address, AUValue value) {
         switch (address) {
             case positionAddress:
-                positionRamper.setUIValue(clamp(value, 0.0f, 1.0f));
+                positionRamper.setUIValue(value);
                 break;
 
             case amplitudeAddress:
@@ -126,7 +119,7 @@ public:
     void startRamp(AUParameterAddress address, AUValue value, AUAudioFrameCount duration) override {
         switch (address) {
             case positionAddress:
-                positionRamper.startRamp(clamp(value, 0.0f, 1.0f), duration);
+                positionRamper.startRamp(value, duration);
                 break;
 
             case amplitudeAddress:
@@ -138,10 +131,6 @@ public:
                 break;
 
         }
-    }
-
-    void setBuffers(AudioBufferList *outBufferList) {
-        outBufferListPtr = outBufferList;
     }
 
     void process(AUAudioFrameCount frameCount, AUAudioFrameCount bufferOffset) override {
@@ -175,12 +164,7 @@ public:
     // MARK: Member Variables
 
 private:
-    int channels = AKSettings.numberOfChannels;
-    float sampleRate = AKSettings.sampleRate;
 
-    AudioBufferList *outBufferListPtr = nullptr;
-
-    sp_data *sp;
     sp_mincer *mincer;
     sp_ftbl *ftbl;
     UInt32 ftbl_size = 4096;
@@ -197,4 +181,4 @@ public:
     ParameterRamper pitchRatioRamper = 1;
 };
 
-#endif /* AKPhaseLockedVocoderDSPKernel_hpp */
+

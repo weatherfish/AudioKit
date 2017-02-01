@@ -6,9 +6,7 @@
 //  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
 //
 
-#ifndef AKToneFilterDSPKernel_hpp
-#define AKToneFilterDSPKernel_hpp
-
+#pragma once
 #import "DSPKernel.hpp"
 #import "ParameterRamper.hpp"
 
@@ -22,20 +20,15 @@ enum {
     halfPowerPointAddress = 0
 };
 
-class AKToneFilterDSPKernel : public DSPKernel {
+class AKToneFilterDSPKernel : public AKSporthKernel, public AKBuffered {
 public:
     // MARK: Member Functions
 
     AKToneFilterDSPKernel() {}
 
-    void init(int channelCount, double inSampleRate) {
-        channels = channelCount;
+    void init(int _channels, double _sampleRate) override {
+        AKSporthKernel::init(_channels, _sampleRate);
 
-        sampleRate = float(inSampleRate);
-
-        sp_create(&sp);
-        sp->sr = sampleRate;
-        sp->nchan = channels;
         sp_tone_create(&tone);
         sp_tone_init(sp, tone);
         tone->hp = 1000.0;
@@ -53,7 +46,7 @@ public:
 
     void destroy() {
         sp_tone_destroy(&tone);
-        sp_destroy(&sp);
+        AKSporthKernel::destroy();
     }
 
     void reset() {
@@ -94,11 +87,6 @@ public:
         }
     }
 
-    void setBuffers(AudioBufferList *inBufferList, AudioBufferList *outBufferList) {
-        inBufferListPtr = inBufferList;
-        outBufferListPtr = outBufferList;
-    }
-
     void process(AUAudioFrameCount frameCount, AUAudioFrameCount bufferOffset) override {
 
         for (int frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
@@ -124,13 +112,7 @@ public:
     // MARK: Member Variables
 
 private:
-    int channels = AKSettings.numberOfChannels;
-    float sampleRate = AKSettings.sampleRate;
 
-    AudioBufferList *inBufferListPtr = nullptr;
-    AudioBufferList *outBufferListPtr = nullptr;
-
-    sp_data *sp;
     sp_tone *tone;
 
     float halfPowerPoint = 1000.0;
@@ -141,4 +123,3 @@ public:
     ParameterRamper halfPowerPointRamper = 1000.0;
 };
 
-#endif /* AKToneFilterDSPKernel_hpp */

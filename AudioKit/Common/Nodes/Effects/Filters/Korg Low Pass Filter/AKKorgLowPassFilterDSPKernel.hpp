@@ -6,8 +6,7 @@
 //  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
 //
 
-#ifndef AKKorgLowPassFilterDSPKernel_hpp
-#define AKKorgLowPassFilterDSPKernel_hpp
+#pragma once
 
 #import "DSPKernel.hpp"
 #import "ParameterRamper.hpp"
@@ -24,20 +23,14 @@ enum {
     saturationAddress = 2
 };
 
-class AKKorgLowPassFilterDSPKernel : public DSPKernel {
+class AKKorgLowPassFilterDSPKernel : public AKSporthKernel, public AKBuffered {
 public:
     // MARK: Member Functions
 
     AKKorgLowPassFilterDSPKernel() {}
 
-    void init(int channelCount, double inSampleRate) {
-        channels = channelCount;
-
-        sampleRate = float(inSampleRate);
-
-        sp_create(&sp);
-        sp->sr = sampleRate;
-        sp->nchan = channels;
+    void init(int _channels, double _sampleRate) override {
+        AKSporthKernel::init(_channels, _sampleRate);
         sp_wpkorg35_create(&wpkorg35);
         sp_wpkorg35_init(sp, wpkorg35);
         wpkorg35->cutoff = 1000.0;
@@ -59,7 +52,7 @@ public:
 
     void destroy() {
         sp_wpkorg35_destroy(&wpkorg35);
-        sp_destroy(&sp);
+        AKSporthKernel::destroy();
     }
 
     void reset() {
@@ -134,11 +127,6 @@ public:
         }
     }
 
-    void setBuffers(AudioBufferList *inBufferList, AudioBufferList *outBufferList) {
-        inBufferListPtr = inBufferList;
-        outBufferListPtr = outBufferList;
-    }
-
     void process(AUAudioFrameCount frameCount, AUAudioFrameCount bufferOffset) override {
 
         for (int frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
@@ -168,13 +156,7 @@ public:
     // MARK: Member Variables
 
 private:
-    int channels = AKSettings.numberOfChannels;
-    float sampleRate = AKSettings.sampleRate;
 
-    AudioBufferList *inBufferListPtr = nullptr;
-    AudioBufferList *outBufferListPtr = nullptr;
-
-    sp_data *sp;
     sp_wpkorg35 *wpkorg35;
 
     float cutoffFrequency = 1000.0;
@@ -189,4 +171,3 @@ public:
     ParameterRamper saturationRamper = 0.0;
 };
 
-#endif /* AKKorgLowPassFilterDSPKernel_hpp */

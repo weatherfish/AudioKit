@@ -6,8 +6,7 @@
 //  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
 //
 
-#ifndef AKPeakingParametricEqualizerFilterDSPKernel_hpp
-#define AKPeakingParametricEqualizerFilterDSPKernel_hpp
+#pragma once
 
 #import "DSPKernel.hpp"
 #import "ParameterRamper.hpp"
@@ -24,20 +23,14 @@ enum {
     qAddress = 2
 };
 
-class AKPeakingParametricEqualizerFilterDSPKernel : public DSPKernel {
+class AKPeakingParametricEqualizerFilterDSPKernel : public AKSporthKernel, public AKBuffered {
 public:
     // MARK: Member Functions
 
     AKPeakingParametricEqualizerFilterDSPKernel() {}
 
-    void init(int channelCount, double inSampleRate) {
-        channels = channelCount;
-
-        sampleRate = float(inSampleRate);
-
-        sp_create(&sp);
-        sp->sr = sampleRate;
-        sp->nchan = channels;
+    void init(int _channels, double _sampleRate) override {
+        AKSporthKernel::init(_channels, _sampleRate);
         sp_pareq_create(&pareq);
         sp_pareq_init(sp, pareq);
         pareq->fc = 1000;
@@ -60,7 +53,7 @@ public:
 
     void destroy() {
         sp_pareq_destroy(&pareq);
-        sp_destroy(&sp);
+        AKSporthKernel::destroy();
     }
 
     void reset() {
@@ -135,11 +128,6 @@ public:
         }
     }
 
-    void setBuffers(AudioBufferList *inBufferList, AudioBufferList *outBufferList) {
-        inBufferListPtr = inBufferList;
-        outBufferListPtr = outBufferList;
-    }
-
     void process(AUAudioFrameCount frameCount, AUAudioFrameCount bufferOffset) override {
 
         for (int frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
@@ -169,13 +157,7 @@ public:
     // MARK: Member Variables
 
 private:
-    int channels = AKSettings.numberOfChannels;
-    float sampleRate = AKSettings.sampleRate;
 
-    AudioBufferList *inBufferListPtr = nullptr;
-    AudioBufferList *outBufferListPtr = nullptr;
-
-    sp_data *sp;
     sp_pareq *pareq;
 
     float centerFrequency = 1000;
@@ -190,4 +172,3 @@ public:
     ParameterRamper qRamper = 0.707;
 };
 
-#endif /* AKPeakingParametricEqualizerFilterDSPKernel_hpp */

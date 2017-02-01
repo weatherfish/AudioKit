@@ -10,20 +10,14 @@ import AVFoundation
 
 /// This is an implementation of Zoelzer's parametric equalizer filter.
 ///
-/// - Parameters:
-///   - input: Input node to process
-///   - centerFrequency: Corner frequency.
-///   - gain: Amount at which the corner frequency value shall be increased or decreased. A value of 1 is a flat response.
-///   - q: Q of the filter. sqrt(0.5) is no resonance.
-///
 open class AKHighShelfParametricEqualizerFilter: AKNode, AKToggleable, AKComponent {
     public typealias AKAudioUnitType = AKHighShelfParametricEqualizerFilterAudioUnit
-    static let ComponentDescription = AudioComponentDescription(effect: "peq2")
+    public static let ComponentDescription = AudioComponentDescription(effect: "peq2")
 
     // MARK: - Properties
 
-    internal var internalAU: AKAudioUnitType?
-    internal var token: AUParameterObserverToken?
+    private var internalAU: AKAudioUnitType?
+    private var token: AUParameterObserverToken?
 
     fileprivate var centerFrequencyParameter: AUParameter?
     fileprivate var gainParameter: AUParameter?
@@ -32,10 +26,7 @@ open class AKHighShelfParametricEqualizerFilter: AKNode, AKToggleable, AKCompone
     /// Ramp Time represents the speed at which parameters are allowed to change
     open var rampTime: Double = AKSettings.rampTime {
         willSet {
-            if rampTime != newValue {
-                internalAU?.rampTime = newValue
-                internalAU?.setUpParameterRamp()
-            }
+            internalAU?.rampTime = newValue
         }
     }
 
@@ -104,15 +95,12 @@ open class AKHighShelfParametricEqualizerFilter: AKNode, AKToggleable, AKCompone
         _Self.register()
 
         super.init()
-        AVAudioUnit.instantiate(with: _Self.ComponentDescription, options: []) {
-            avAudioUnit, error in
+        AVAudioUnit._instantiate(with: _Self.ComponentDescription) {
+            avAudioUnit in
 
-            guard let avAudioUnitEffect = avAudioUnit else { return }
+            self.avAudioNode = avAudioUnit
+            self.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
 
-            self.avAudioNode = avAudioUnitEffect
-            self.internalAU = avAudioUnitEffect.auAudioUnit as? AKAudioUnitType
-
-            AudioKit.engine.attach(self.avAudioNode)
             input.addConnectionPoint(self)
         }
 

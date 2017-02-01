@@ -9,6 +9,12 @@
 import Foundation
 import AVFoundation
 
+extension AVAudioConnectionPoint {
+    convenience init(_ node: AKNode, to bus: Int) {
+        self.init(node: node.avAudioNode, bus: bus)
+    }
+}
+
 /// Parent class for all nodes in AudioKit
 @objc open class AKNode: NSObject {
     
@@ -22,14 +28,25 @@ import AVFoundation
     override public init() {
         self.avAudioNode = AVAudioNode()
     }
-    
+
+    public init(avAudioNode: AVAudioNode, attach: Bool = false) {
+      self.avAudioNode = avAudioNode
+      if attach {
+        AudioKit.engine.attach(avAudioNode)
+      }
+    }
+
     /// Connect this node to another
-    open func addConnectionPoint(_ node: AKNode) {
-        connectionPoints.append(AVAudioConnectionPoint(node: node.avAudioNode, bus: 0))
+    open func addConnectionPoint(_ node: AKNode, bus: Int = 0) {
+        connectionPoints.append(AVAudioConnectionPoint(node, to: bus))
         AudioKit.engine.connect(avAudioNode,
                                 to: connectionPoints,
-                                fromBus: 0,
+                                fromBus: bus,
                                 format: AudioKit.format)
+    }
+    
+    deinit {
+        AudioKit.engine.detach(self.avAudioNode)
     }
 }
 
@@ -61,7 +78,7 @@ open class AKPolyphonicNode: AKNode, AKPolyphonic {
     ///   - velocity:   MIDI Velocity
     ///
     open func play(noteNumber: MIDINoteNumber, velocity: MIDIVelocity) {
-        print("Playing note \(noteNumber), with velocity \(velocity), override in subclass")
+        AKLog("Playing note \(noteNumber), with velocity \(velocity), override in subclass")
     }
     
     /// Stop a sound corresponding to a MIDI note
@@ -69,7 +86,7 @@ open class AKPolyphonicNode: AKNode, AKPolyphonic {
     /// - parameter noteNumber: MIDI Note Number
     ///
     open func stop(noteNumber: MIDINoteNumber) {
-        print("Stopping note \(noteNumber), override in subclass")
+        AKLog("Stopping note \(noteNumber), override in subclass")
     }
 }
 

@@ -6,8 +6,7 @@
 //  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
 //
 
-#ifndef AKModalResonanceFilterDSPKernel_hpp
-#define AKModalResonanceFilterDSPKernel_hpp
+#pragma once
 
 #import "DSPKernel.hpp"
 #import "ParameterRamper.hpp"
@@ -23,20 +22,15 @@ enum {
     qualityFactorAddress = 1
 };
 
-class AKModalResonanceFilterDSPKernel : public DSPKernel {
+class AKModalResonanceFilterDSPKernel : public AKSporthKernel, public AKBuffered {
 public:
     // MARK: Member Functions
 
     AKModalResonanceFilterDSPKernel() {}
 
-    void init(int channelCount, double inSampleRate) {
-        channels = channelCount;
+    void init(int _channels, double _sampleRate) override {
+        AKSporthKernel::init(_channels, _sampleRate);
 
-        sampleRate = float(inSampleRate);
-
-        sp_create(&sp);
-        sp->sr = sampleRate;
-        sp->nchan = channels;
         sp_mode_create(&mode);
         sp_mode_init(sp, mode);
         mode->freq = 500.0;
@@ -56,7 +50,7 @@ public:
 
     void destroy() {
         sp_mode_destroy(&mode);
-        sp_destroy(&sp);
+        AKSporthKernel::destroy();
     }
 
     void reset() {
@@ -114,11 +108,6 @@ public:
         }
     }
 
-    void setBuffers(AudioBufferList *inBufferList, AudioBufferList *outBufferList) {
-        inBufferListPtr = inBufferList;
-        outBufferListPtr = outBufferList;
-    }
-
     void process(AUAudioFrameCount frameCount, AUAudioFrameCount bufferOffset) override {
 
         for (int frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
@@ -146,13 +135,7 @@ public:
     // MARK: Member Variables
 
 private:
-    int channels = AKSettings.numberOfChannels;
-    float sampleRate = AKSettings.sampleRate;
 
-    AudioBufferList *inBufferListPtr = nullptr;
-    AudioBufferList *outBufferListPtr = nullptr;
-
-    sp_data *sp;
     sp_mode *mode;
 
     float frequency = 500.0;
@@ -165,4 +148,3 @@ public:
     ParameterRamper qualityFactorRamper = 50.0;
 };
 
-#endif /* AKModalResonanceFilterDSPKernel_hpp */

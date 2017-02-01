@@ -5,9 +5,7 @@
 //  Created by Aurelius Prochazka, revision history on Github.
 //  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
 //
-
-#ifndef AKLowPassButterworthFilterDSPKernel_hpp
-#define AKLowPassButterworthFilterDSPKernel_hpp
+#pragma once
 
 #import "DSPKernel.hpp"
 #import "ParameterRamper.hpp"
@@ -22,20 +20,15 @@ enum {
     cutoffFrequencyAddress = 0
 };
 
-class AKLowPassButterworthFilterDSPKernel : public DSPKernel {
+class AKLowPassButterworthFilterDSPKernel : public AKSporthKernel, public AKBuffered {
 public:
     // MARK: Member Functions
 
     AKLowPassButterworthFilterDSPKernel() {}
 
-    void init(int channelCount, double inSampleRate) {
-        channels = channelCount;
+    void init(int _channels, double _sampleRate) override {
+        AKSporthKernel::init(_channels, _sampleRate);
 
-        sampleRate = float(inSampleRate);
-
-        sp_create(&sp);
-        sp->sr = sampleRate;
-        sp->nchan = channels;
         sp_butlp_create(&butlp);
         sp_butlp_init(sp, butlp);
         butlp->freq = 1000.0;
@@ -53,7 +46,7 @@ public:
 
     void destroy() {
         sp_butlp_destroy(&butlp);
-        sp_destroy(&sp);
+        AKSporthKernel::destroy();
     }
 
     void reset() {
@@ -94,11 +87,6 @@ public:
         }
     }
 
-    void setBuffers(AudioBufferList *inBufferList, AudioBufferList *outBufferList) {
-        inBufferListPtr = inBufferList;
-        outBufferListPtr = outBufferList;
-    }
-
     void process(AUAudioFrameCount frameCount, AUAudioFrameCount bufferOffset) override {
 
         for (int frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
@@ -124,13 +112,6 @@ public:
     // MARK: Member Variables
 
 private:
-    int channels = AKSettings.numberOfChannels;
-    float sampleRate = AKSettings.sampleRate;
-
-    AudioBufferList *inBufferListPtr = nullptr;
-    AudioBufferList *outBufferListPtr = nullptr;
-
-    sp_data *sp;
     sp_butlp *butlp;
 
     float cutoffFrequency = 1000.0;
@@ -141,4 +122,3 @@ public:
     ParameterRamper cutoffFrequencyRamper = 1000.0;
 };
 
-#endif /* AKLowPassButterworthFilterDSPKernel_hpp */

@@ -6,8 +6,7 @@
 //  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
 //
 
-#ifndef AKMoogLadderDSPKernel_hpp
-#define AKMoogLadderDSPKernel_hpp
+#pragma once
 
 #import "DSPKernel.hpp"
 #import "ParameterRamper.hpp"
@@ -23,20 +22,15 @@ enum {
     resonanceAddress = 1
 };
 
-class AKMoogLadderDSPKernel : public DSPKernel {
+class AKMoogLadderDSPKernel : public AKSporthKernel, public AKBuffered {
 public:
     // MARK: Member Functions
 
     AKMoogLadderDSPKernel() {}
 
-    void init(int channelCount, double inSampleRate) {
-        channels = channelCount;
+    void init(int _channels, double _sampleRate) override {
+        AKSporthKernel::init(_channels, _sampleRate);
 
-        sampleRate = float(inSampleRate);
-
-        sp_create(&sp);
-        sp->sr = sampleRate;
-        sp->nchan = channels;
         sp_moogladder_create(&moogladder);
         sp_moogladder_init(sp, moogladder);
         moogladder->freq = 1000;
@@ -56,7 +50,7 @@ public:
 
     void destroy() {
         sp_moogladder_destroy(&moogladder);
-        sp_destroy(&sp);
+        AKSporthKernel::destroy();
     }
 
     void reset() {
@@ -114,11 +108,6 @@ public:
         }
     }
 
-    void setBuffers(AudioBufferList *inBufferList, AudioBufferList *outBufferList) {
-        inBufferListPtr = inBufferList;
-        outBufferListPtr = outBufferList;
-    }
-
     void process(AUAudioFrameCount frameCount, AUAudioFrameCount bufferOffset) override {
 
         for (int frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
@@ -146,13 +135,7 @@ public:
     // MARK: Member Variables
 
 private:
-    int channels = AKSettings.numberOfChannels;
-    float sampleRate = AKSettings.sampleRate;
 
-    AudioBufferList *inBufferListPtr = nullptr;
-    AudioBufferList *outBufferListPtr = nullptr;
-
-    sp_data *sp;
     sp_moogladder *moogladder;
 
     float cutoffFrequency = 1000;
@@ -165,4 +148,3 @@ public:
     ParameterRamper resonanceRamper = 0.5;
 };
 
-#endif /* AKMoogLadderDSPKernel_hpp */

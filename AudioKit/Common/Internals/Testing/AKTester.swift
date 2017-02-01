@@ -11,8 +11,7 @@ import AVFoundation
 /// Testing node
 open class AKTester: AKNode, AKToggleable, AKComponent {
     public typealias AKAudioUnitType = AKTesterAudioUnit
-    static let ComponentDescription = AudioComponentDescription(effect: "tstr")
-
+    public static let ComponentDescription = AudioComponentDescription(effect: "tstr")
 
     // MARK: - Properties
 
@@ -23,12 +22,12 @@ open class AKTester: AKNode, AKToggleable, AKComponent {
 
     /// Calculate the MD5
     open var MD5: String {
-        return (self.internalAU?.getMD5())!
+        return (self.internalAU?.md5)!
     }
 
     /// Flag on whether or not the test is still in progress
     open var isStarted: Bool {
-        return Int((self.internalAU?.getSamples())!) < totalSamples
+        return Int((self.internalAU?.samples)!) < totalSamples
     }
 
     // MARK: - Initializers
@@ -47,17 +46,14 @@ open class AKTester: AKNode, AKToggleable, AKComponent {
         _Self.register()
 
         super.init()
-        AVAudioUnit.instantiate(with: _Self.ComponentDescription, options: []) {
-            avAudioUnit, error in
+        AVAudioUnit._instantiate(with: _Self.ComponentDescription) {
+            avAudioUnit in
 
-            guard let avAudioUnitEffect = avAudioUnit else { return }
+            self.avAudioNode = avAudioUnit
+            self.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
 
-            self.avAudioNode = avAudioUnitEffect
-            self.internalAU = avAudioUnitEffect.auAudioUnit as? AKAudioUnitType
-
-            AudioKit.engine.attach(self.avAudioNode)
             input.addConnectionPoint(self)
-            self.internalAU?.setSamples(Int32(samples))
+            self.internalAU?.samples = Int32(samples)
         }
     }
 

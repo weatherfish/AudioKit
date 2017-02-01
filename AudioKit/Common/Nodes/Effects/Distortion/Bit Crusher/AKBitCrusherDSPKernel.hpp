@@ -6,8 +6,7 @@
 //  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
 //
 
-#ifndef AKBitCrusherDSPKernel_hpp
-#define AKBitCrusherDSPKernel_hpp
+#pragma once
 
 #import "DSPKernel.hpp"
 #import "ParameterRamper.hpp"
@@ -23,16 +22,16 @@ enum {
     sampleRateAddress = 1
 };
 
-class AKBitCrusherDSPKernel : public DSPKernel {
+class AKBitCrusherDSPKernel : public AKDSPKernel, public AKBuffered {
 public:
     // MARK: Member Functions
 
     AKBitCrusherDSPKernel() {}
 
-    void init(int channelCount, double inSampleRate) {
-        channels = channelCount;
+    void init(int _channels, double _sampleRate) override {
+        channels = _channels;
 
-        globalSampleRate = float(inSampleRate);
+        globalSampleRate = float(_sampleRate);
 
         sp_create(&sp);
         sp->sr = globalSampleRate;
@@ -114,11 +113,6 @@ public:
         }
     }
 
-    void setBuffers(AudioBufferList *inBufferList, AudioBufferList *outBufferList) {
-        inBufferListPtr = inBufferList;
-        outBufferListPtr = outBufferList;
-    }
-
     void process(AUAudioFrameCount frameCount, AUAudioFrameCount bufferOffset) override {
 
         for (int frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
@@ -149,9 +143,6 @@ private:
     int channels = AKSettings.numberOfChannels;
     float globalSampleRate = AKSettings.sampleRate;
 
-    AudioBufferList *inBufferListPtr = nullptr;
-    AudioBufferList *outBufferListPtr = nullptr;
-
     sp_data *sp;
     sp_bitcrush *bitcrush;
 
@@ -165,4 +156,3 @@ public:
     ParameterRamper sampleRateRamper = 10000;
 };
 
-#endif /* AKBitCrusherDSPKernel_hpp */

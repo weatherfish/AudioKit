@@ -10,32 +10,19 @@ import AVFoundation
 
 /// AudioKit version of Apple's Decimator from the Distortion Audio Unit
 ///
-/// - Parameters:
-///   - input: Input node to process
-///   - decimation: Decimation (Normalized Value) ranges from 0 to 1 (Default: 0.5)
-///   - rounding: Rounding (Normalized Value) ranges from 0 to 1 (Default: 0)
-///   - mix: Mix (Normalized Value) ranges from 0 to 1 (Default: 1)
-///
-open class AKDecimator: AKNode, AKToggleable, AUComponent {
-
+open class AKDecimator: AKNode, AKToggleable, AUEffect {
     // MARK: - Properties
 
-    static let ComponentDescription = AudioComponentDescription(appleEffect: kAudioUnitSubType_Distortion)
+    public static let ComponentDescription = AudioComponentDescription(appleEffect: kAudioUnitSubType_Distortion)
 
-    internal var internalEffect = AVAudioUnitEffect()
-    internal var internalAU: AudioUnit? = nil
-
-    fileprivate var lastKnownMix: Double = 1
+    private var au: AUWrapper
+    private var lastKnownMix: Double = 1
 
     /// Decimation (Normalized Value) ranges from 0 to 1 (Default: 0.5)
     open var decimation: Double = 0.5 {
         didSet {
             decimation = (0...1).clamp(decimation)
-            AudioUnitSetParameter(
-                internalAU!,
-                kDistortionParam_Decimation,
-                kAudioUnitScope_Global, 0,
-                Float(decimation) * 100.0, 0)
+            au[kDistortionParam_Decimation] = decimation * 100
         }
     }
 
@@ -43,11 +30,7 @@ open class AKDecimator: AKNode, AKToggleable, AUComponent {
     open var rounding: Double = 0 {
         didSet {
             rounding = (0...1).clamp(rounding)
-            AudioUnitSetParameter(
-                internalAU!,
-                kDistortionParam_Rounding,
-                kAudioUnitScope_Global, 0,
-                Float(rounding) * 100.0, 0)
+            au[kDistortionParam_Rounding] = rounding * 100
         }
     }
 
@@ -55,11 +38,7 @@ open class AKDecimator: AKNode, AKToggleable, AUComponent {
     open var mix: Double = 1 {
         didSet {
             mix = (0...1).clamp(mix)
-            AudioUnitSetParameter(
-                internalAU!,
-                kDistortionParam_FinalMix,
-                kAudioUnitScope_Global, 0,
-                Float(mix) * 100.0, 0)
+            au[kDistortionParam_FinalMix] = mix * 100
         }
     }
 
@@ -86,24 +65,21 @@ open class AKDecimator: AKNode, AKToggleable, AUComponent {
             self.rounding = rounding
             self.mix = mix
 
-            internalEffect = AVAudioUnitEffect(audioComponentDescription: _Self.ComponentDescription)
-            super.init()
+            let effect = _Self.effect
+            au = AUWrapper(au: effect)
+            super.init(avAudioNode: effect, attach: true)
 
-            avAudioNode = internalEffect
-            AudioKit.engine.attach(self.avAudioNode)
             input.addConnectionPoint(self)
-            internalAU = internalEffect.audioUnit
 
             // Since this is the Decimator, mix it to 100% and use the final mix as the mix parameter
-            AudioUnitSetParameter(internalAU!, kDistortionParam_DecimationMix, kAudioUnitScope_Global, 0, 100, 0)
 
-            AudioUnitSetParameter(internalAU!, kDistortionParam_Decimation, kAudioUnitScope_Global, 0, Float(decimation) * 100.0, 0)
-            AudioUnitSetParameter(internalAU!, kDistortionParam_Rounding, kAudioUnitScope_Global, 0, Float(rounding) * 100.0, 0)
-            AudioUnitSetParameter(internalAU!, kDistortionParam_FinalMix, kAudioUnitScope_Global, 0, Float(mix) * 100.0, 0)
-            //turn off the other distortion effects
-            AudioUnitSetParameter(internalAU!, kDistortionParam_PolynomialMix, kAudioUnitScope_Global, 0, 0, 0)
-            AudioUnitSetParameter(internalAU!, kDistortionParam_RingModMix, kAudioUnitScope_Global, 0, 0, 0)
-            AudioUnitSetParameter(internalAU!, kDistortionParam_DelayMix, kAudioUnitScope_Global, 0, 0, 0)
+            au[kDistortionParam_Decimation] = decimation * 100
+            au[kDistortionParam_Rounding] = rounding * 100
+            au[kDistortionParam_FinalMix] = mix * 100
+
+            au[kDistortionParam_PolynomialMix] = 0
+            au[kDistortionParam_DelayMix] = 0
+            au[kDistortionParam_DelayMix] = 0
     }
 
     // MARK: - Control

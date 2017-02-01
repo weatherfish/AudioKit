@@ -10,16 +10,10 @@ import AVFoundation
 
 /// AudioKit version of Apple's BandPassFilter Audio Unit
 ///
-/// - Parameters:
-///   - input: Input node to process
-///   - centerFrequency: Center Frequency (Hz) ranges from 20 to 22050 (Default: 5000)
-///   - bandwidth: Bandwidth (Cents) ranges from 100 to 12000 (Default: 600)
-///
-open class AKBandPassFilter: AKNode, AKToggleable, AUComponent {
-    static let ComponentDescription = AudioComponentDescription(appleEffect: kAudioUnitSubType_BandPassFilter)
+open class AKBandPassFilter: AKNode, AKToggleable, AUEffect {
+    public static let ComponentDescription = AudioComponentDescription(appleEffect: kAudioUnitSubType_BandPassFilter)
 
-    internal var internalEffect = AVAudioUnitEffect()
-    internal var internalAU: AudioUnit? = nil
+    private var au: AUWrapper
 
     fileprivate var mixer: AKMixer
 
@@ -27,11 +21,7 @@ open class AKBandPassFilter: AKNode, AKToggleable, AUComponent {
     open var centerFrequency: Double = 5000 {
         didSet {
             centerFrequency = (20...22050).clamp(centerFrequency)
-            AudioUnitSetParameter(
-                internalAU!,
-                kBandpassParam_CenterFrequency,
-                kAudioUnitScope_Global, 0,
-                Float(centerFrequency), 0)
+            au[kBandpassParam_CenterFrequency] = centerFrequency
         }
     }
 
@@ -39,11 +29,7 @@ open class AKBandPassFilter: AKNode, AKToggleable, AUComponent {
     open var bandwidth: Double = 600 {
         didSet {
             bandwidth = (100...12000).clamp(bandwidth)
-            AudioUnitSetParameter(
-                internalAU!,
-                kBandpassParam_Bandwidth,
-                kAudioUnitScope_Global, 0,
-                Float(bandwidth), 0)
+            au[kBandpassParam_Bandwidth] = bandwidth
         }
     }
 
@@ -56,9 +42,9 @@ open class AKBandPassFilter: AKNode, AKToggleable, AUComponent {
         }
     }
 
-    fileprivate var lastKnownMix: Double = 100
-    fileprivate var inputGain: AKMixer?
-    fileprivate var effectGain: AKMixer?
+    private var lastKnownMix: Double = 100
+    private var inputGain: AKMixer?
+    private var effectGain: AKMixer?
 
     /// Tells whether the node is processing (ie. started, playing, or active)
     open var isStarted = true
@@ -87,17 +73,16 @@ open class AKBandPassFilter: AKNode, AKToggleable, AUComponent {
             effectGain = AKMixer(input)
             effectGain!.volume = 1
 
-            internalEffect = AVAudioUnitEffect(audioComponentDescription: _Self.ComponentDescription)
-            super.init()
+            let effect = _Self.effect
+            au = AUWrapper(au: effect)
 
-            AudioKit.engine.attach(internalEffect)
-            internalAU = internalEffect.audioUnit
-            AudioKit.engine.connect((effectGain?.avAudioNode)!, to: internalEffect)
-            AudioKit.engine.connect(internalEffect, to: mixer.avAudioNode)
-            avAudioNode = mixer.avAudioNode
+            super.init(avAudioNode: mixer.avAudioNode, attach: true)
 
-            AudioUnitSetParameter(internalAU!, kBandpassParam_CenterFrequency, kAudioUnitScope_Global, 0, Float(centerFrequency), 0)
-            AudioUnitSetParameter(internalAU!, kBandpassParam_Bandwidth, kAudioUnitScope_Global, 0, Float(bandwidth), 0)
+            AudioKit.engine.connect((effectGain?.avAudioNode)!, to: effect)
+            AudioKit.engine.connect(effect, to: mixer.avAudioNode)
+
+            au[kBandpassParam_CenterFrequency] = centerFrequency
+            au[kBandpassParam_Bandwidth] = bandwidth
     }
 
     // MARK: - Control

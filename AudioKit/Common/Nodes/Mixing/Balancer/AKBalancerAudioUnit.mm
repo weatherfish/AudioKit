@@ -9,7 +9,6 @@
 #import "AKBalancerAudioUnit.h"
 #import "AKBalancerDSPKernel.hpp"
 
-#import <AVFoundation/AVFoundation.h>
 #import "BufferedAudioBus.hpp"
 
 #import <AudioKit/AudioKit-Swift.h>
@@ -19,8 +18,6 @@
 @property AUAudioUnitBus *outputBus;
 @property AUAudioUnitBusArray *inputBusArray;
 @property AUAudioUnitBusArray *outputBusArray;
-
-@property (nonatomic, readwrite) AUParameterTree *parameterTree;
 
 @end
 

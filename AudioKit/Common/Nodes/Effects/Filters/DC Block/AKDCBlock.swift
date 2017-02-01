@@ -11,18 +11,14 @@ import AVFoundation
 /// Implements the DC blocking filter Y[i] = X[i] - X[i-1] + (igain * Y[i-1]) 
 /// Based on work by Perry Cook.
 ///
-/// - parameter input: Input node to process
-///
 open class AKDCBlock: AKNode, AKToggleable, AKComponent {
     public typealias AKAudioUnitType = AKDCBlockAudioUnit
-    static let ComponentDescription = AudioComponentDescription(effect: "dcbk")
+    public static let ComponentDescription = AudioComponentDescription(effect: "dcbk")
 
     // MARK: - Properties
 
-    internal var internalAU: AKAudioUnitType?
-    internal var token: AUParameterObserverToken?
-
-
+    private var internalAU: AKAudioUnitType?
+    private var token: AUParameterObserverToken?
 
     /// Tells whether the node is processing (ie. started, playing, or active)
     open var isStarted: Bool {
@@ -39,15 +35,12 @@ open class AKDCBlock: AKNode, AKToggleable, AKComponent {
         _Self.register()
 
         super.init()
-        AVAudioUnit.instantiate(with: _Self.ComponentDescription, options: []) {
-            avAudioUnit, error in
+        AVAudioUnit._instantiate(with: _Self.ComponentDescription) {
+            avAudioUnit in
 
-            guard let avAudioUnitEffect = avAudioUnit else { return }
+            self.avAudioNode = avAudioUnit
+            self.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
 
-            self.avAudioNode = avAudioUnitEffect
-            self.internalAU = avAudioUnitEffect.auAudioUnit as? AKAudioUnitType
-
-            AudioKit.engine.attach(self.avAudioNode)
             input.addConnectionPoint(self)
         }
     }

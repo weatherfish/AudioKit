@@ -10,26 +10,11 @@ import AVFoundation
 
 /// AudioKit version of Apple's DynamicsProcessor Audio Unit
 ///
-/// - Parameters:
-///   - input: Input node to process
-///   - threshold: Threshold (dB) ranges from -40 to 20 (Default: -20)
-///   - headRoom: Head Room (dB) ranges from 0.1 to 40.0 (Default: 5)
-///   - expansionRatio: Expansion Ratio (rate) ranges from 1 to 50.0 (Default: 2)
-///   - expansionThreshold: Expansion Threshold (rate) ranges from 1 to 50.0 (Default: 2)
-///   - attackTime: Attack Time (secs) ranges from 0.0001 to 0.2 (Default: 0.001)
-///   - releaseTime: Release Time (secs) ranges from 0.01 to 3 (Default: 0.05)
-///   - masterGain: Master Gain (dB) ranges from -40 to 40 (Default: 0)
-///   - compressionAmount: Compression Amount (dB) ranges from -40 to 40 (Default: 0) (read only)
-///   - inputAmplitude: Input Amplitude (dB) ranges from -40 to 40 (Default: 0) (read only)
-///   - outputAmplitude: Output Amplitude (dB) ranges from -40 to 40 (Default: 0) (read only)
-///
-open class AKDynamicsProcessor: AKNode, AKToggleable, AUComponent {
+open class AKDynamicsProcessor: AKNode, AKToggleable, AUEffect {
 
-    static let ComponentDescription = AudioComponentDescription(appleEffect: kAudioUnitSubType_DynamicsProcessor)
+    public static let ComponentDescription = AudioComponentDescription(appleEffect: kAudioUnitSubType_DynamicsProcessor)
 
-    internal var internalEffect = AVAudioUnitEffect()
-
-    internal var au: AUWrapper
+    private var au: AUWrapper
     fileprivate var mixer: AKMixer
 
     /// Threshold (dB) ranges from -40 to 20 (Default: -20)
@@ -163,16 +148,16 @@ open class AKDynamicsProcessor: AKNode, AKToggleable, AUComponent {
             effectGain = AKMixer(input)
             effectGain!.volume = 1
 
-            internalEffect = AVAudioUnitEffect(audioComponentDescription: _Self.ComponentDescription)
-            AudioKit.engine.attach(internalEffect)
+            let effect = _Self.effect
+            AudioKit.engine.attach(effect)
 
-            au = AUWrapper(au: internalEffect.audioUnit)
+            au = AUWrapper(au: effect)
 
-            AudioKit.engine.connect((effectGain?.avAudioNode)!, to: internalEffect)
-            AudioKit.engine.connect(internalEffect, to: mixer.avAudioNode)
+            AudioKit.engine.connect((effectGain?.avAudioNode)!, to: effect)
+            AudioKit.engine.connect(effect, to: mixer.avAudioNode)
 
-            super.init()
-            avAudioNode = mixer.avAudioNode
+            super.init(avAudioNode: mixer.avAudioNode)
+
             au[kDynamicsProcessorParam_Threshold] = threshold
             au[kDynamicsProcessorParam_HeadRoom] = headRoom
             au[kDynamicsProcessorParam_ExpansionRatio] = expansionRatio

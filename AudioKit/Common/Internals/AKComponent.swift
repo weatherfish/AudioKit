@@ -8,17 +8,28 @@
 
 import Foundation
 
-protocol AUComponent: class {
+public protocol Aliased {
     associatedtype _Self = Self
+}
+
+public protocol AUComponent: class, Aliased {
     static var ComponentDescription: AudioComponentDescription { get }
 }
 
-protocol AKComponent: AUComponent {
+protocol AUEffect: AUComponent { }
+
+extension AUEffect {
+    static var effect: AVAudioUnitEffect {
+        return AVAudioUnitEffect(audioComponentDescription: ComponentDescription)
+    }
+}
+
+public protocol AKComponent: AUComponent {
     associatedtype AKAudioUnitType: AnyObject
 }
 
 extension AKComponent {
-    static func register() {
+    public static func register() {
         AUAudioUnit.registerSubclass(Self.AKAudioUnitType.self,
                                      as: Self.ComponentDescription,
                                      name: "Local \(Self.self)",
@@ -27,13 +38,13 @@ extension AKComponent {
 }
 
 extension AUParameterTree {
-    internal subscript (key: String) -> AUParameter? {
+    public subscript (key: String) -> AUParameter? {
         return value(forKey: key) as? AUParameter
     }
 }
 
 extension AudioComponentDescription {
-    internal init(type: OSType, subType: OSType) {
+    public init(type: OSType, subType: OSType) {
         self.init(componentType: type,
                   componentSubType: subType,
                   componentManufacturer: fourCC("AuKt"),
@@ -41,7 +52,7 @@ extension AudioComponentDescription {
                   componentFlagsMask: 0)
     }
 
-    internal init(appleEffect subType: OSType) {
+    public init(appleEffect subType: OSType) {
         self.init(componentType: kAudioUnitType_Effect,
                   componentSubType: subType,
                   componentManufacturer: kAudioUnitManufacturer_Apple,
@@ -49,19 +60,19 @@ extension AudioComponentDescription {
                   componentFlagsMask: 0)
     }
 
-    internal init(effect subType: OSType) {
+    public init(effect subType: OSType) {
         self.init(type: kAudioUnitType_Effect, subType: subType)
     }
     
-    internal init(effect subType: String) {
+    public init(effect subType: String) {
         self.init(effect: fourCC(subType))
     }
     
-    internal init(mixer subType: String) {
+    public init(mixer subType: String) {
         self.init(type: kAudioUnitType_Mixer, subType: fourCC(subType))
     }
     
-    internal init(generator subType: String) {
+    public init(generator subType: String) {
         self.init(type: kAudioUnitType_Generator, subType: fourCC(subType))
     }
 }

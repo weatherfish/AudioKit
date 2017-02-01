@@ -10,20 +10,13 @@ import AVFoundation
 
 /// This will digitally degrade a signal.
 ///
-/// - Parameters:
-///   - input: Input node to process
-///   - bitDepth: The bit depth of signal output. Typically in range (1-24). Non-integer values are OK.
-///   - sampleRate: The sample rate of signal output.
-///
 open class AKBitCrusher: AKNode, AKToggleable, AKComponent {
     public typealias AKAudioUnitType = AKBitCrusherAudioUnit
-    static let ComponentDescription = AudioComponentDescription(effect: "btcr")
-
+    public static let ComponentDescription = AudioComponentDescription(effect: "btcr")
 
     // MARK: - Properties
-
-    internal var internalAU: AKAudioUnitType?
-    internal var token: AUParameterObserverToken?
+    private var internalAU: AKAudioUnitType?
+    private var token: AUParameterObserverToken?
 
     fileprivate var bitDepthParameter: AUParameter?
     fileprivate var sampleRateParameter: AUParameter?
@@ -31,10 +24,7 @@ open class AKBitCrusher: AKNode, AKToggleable, AKComponent {
     /// Ramp Time represents the speed at which parameters are allowed to change
     open var rampTime: Double = AKSettings.rampTime {
         willSet {
-            if rampTime != newValue {
-                internalAU?.rampTime = newValue
-                internalAU?.setUpParameterRamp()
-            }
+            internalAU?.rampTime = newValue
         }
     }
 
@@ -88,15 +78,13 @@ open class AKBitCrusher: AKNode, AKToggleable, AKComponent {
         _Self.register()
 
         super.init()
-        AVAudioUnit.instantiate(with: _Self.ComponentDescription, options: []) {
-            avAudioUnit, error in
 
-            guard let avAudioUnitEffect = avAudioUnit else { return }
+        AVAudioUnit._instantiate(with: _Self.ComponentDescription) {
+            avAudioUnit in
 
-            self.avAudioNode = avAudioUnitEffect
-            self.internalAU = avAudioUnitEffect.auAudioUnit as? AKAudioUnitType
+            self.avAudioNode = avAudioUnit
+            self.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
 
-            AudioKit.engine.attach(self.avAudioNode)
             input.addConnectionPoint(self)
         }
 

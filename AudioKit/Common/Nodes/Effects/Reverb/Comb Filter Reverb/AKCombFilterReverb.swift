@@ -14,29 +14,21 @@ import AVFoundation
 /// for a signal to decay to 1/1000, or 60dB down from its original amplitude).
 /// Output from a comb filter will appear only after loopDuration seconds.
 ///
-/// - Parameters:
-///   - input: Input node to process
-///   - reverbDuration: The time in seconds for a signal to decay to 1/1000, or 60dB from its original amplitude. (aka RT-60).
-///   - loopDuration: The loop time of the filter, in seconds. This can also be thought of as the delay time. Determines frequency response curve, loopDuration * sr/2 peaks spaced evenly between 0 and sr/2.
-///
 open class AKCombFilterReverb: AKNode, AKToggleable, AKComponent {
     public typealias AKAudioUnitType = AKCombFilterReverbAudioUnit
-    static let ComponentDescription = AudioComponentDescription(effect: "comb")
+    public static let ComponentDescription = AudioComponentDescription(effect: "comb")
 
     // MARK: - Properties
 
-    internal var internalAU: AKAudioUnitType?
-    internal var token: AUParameterObserverToken?
+    private var internalAU: AKAudioUnitType?
+    private var token: AUParameterObserverToken?
 
     fileprivate var reverbDurationParameter: AUParameter?
 
     /// Ramp Time represents the speed at which parameters are allowed to change
     open var rampTime: Double = AKSettings.rampTime {
         willSet {
-            if rampTime != newValue {
-                internalAU?.rampTime = newValue
-                internalAU?.setUpParameterRamp()
-            }
+            internalAU?.rampTime = newValue
         }
     }
 
@@ -76,15 +68,12 @@ open class AKCombFilterReverb: AKNode, AKToggleable, AKComponent {
         _Self.register()
 
         super.init()
-        AVAudioUnit.instantiate(with: _Self.ComponentDescription, options: []) {
-            avAudioUnit, error in
+        AVAudioUnit._instantiate(with: _Self.ComponentDescription) {
+            avAudioUnit in
 
-            guard let avAudioUnitEffect = avAudioUnit else { return }
+            self.avAudioNode = avAudioUnit
+            self.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
 
-            self.avAudioNode = avAudioUnitEffect
-            self.internalAU = avAudioUnitEffect.auAudioUnit as? AKAudioUnitType
-
-            AudioKit.engine.attach(self.avAudioNode)
             input.addConnectionPoint(self)
             self.internalAU!.setLoopDuration(Float(loopDuration))
         }

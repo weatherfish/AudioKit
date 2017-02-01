@@ -8,28 +8,16 @@
 
 import AVFoundation
 
-///
-///
-/// - Parameters:
-///   - leftBoundaryCondition: Boundary condition at left end of bar. 1 = clamped, 2 = pivoting, 3 = free
-///   - rightBoundaryCondition: Boundary condition at right end of bar. 1 = clamped, 2 = pivoting, 3 = free
-///   - decayDuration: 30db decay time (in seconds).
-///   - scanSpeed: Speed of scanning the output location.
-///   - position: Position along bar that strike occurs.
-///   - strikeVelocity: Normalized strike velocity
-///   - strikeWidth: Spatial width of strike.
-///   - stiffness: Dimensionless stiffness parameter
-///   - highFrequencyDamping: High-frequency loss parameter. Keep this small
+/// Metal Bar Physical Model
 ///
 open class AKMetalBar: AKNode, AKComponent {
     public typealias AKAudioUnitType = AKMetalBarAudioUnit
-    static let ComponentDescription = AudioComponentDescription(generator: "mbar")
+    public static let ComponentDescription = AudioComponentDescription(generator: "mbar")
 
     // MARK: - Properties
 
-    internal var internalAU: AKAudioUnitType?
-    internal var token: AUParameterObserverToken?
-
+    private var internalAU: AKAudioUnitType?
+    private var token: AUParameterObserverToken?
 
     fileprivate var leftBoundaryConditionParameter: AUParameter?
     fileprivate var rightBoundaryConditionParameter: AUParameter?
@@ -42,10 +30,7 @@ open class AKMetalBar: AKNode, AKComponent {
     /// Ramp Time represents the speed at which parameters are allowed to change
     open var rampTime: Double = AKSettings.rampTime {
         willSet {
-            if rampTime != newValue {
-                internalAU?.rampTime = newValue
-                internalAU?.setUpParameterRamp()
-            }
+            internalAU?.rampTime = newValue
         }
     }
 
@@ -155,26 +140,22 @@ open class AKMetalBar: AKNode, AKComponent {
         _Self.register()
 
         super.init()
-        AVAudioUnit.instantiate(with: _Self.ComponentDescription, options: []) {
-            avAudioUnit, error in
+        AVAudioUnit._instantiate(with: _Self.ComponentDescription) {
+            avAudioUnit in
 
-            guard let avAudioUnitGenerator = avAudioUnit else { return }
-
-            self.avAudioNode = avAudioUnitGenerator
-            self.internalAU = avAudioUnitGenerator.auAudioUnit as? AKAudioUnitType
-
-            AudioKit.engine.attach(self.avAudioNode)
+            self.avAudioNode = avAudioUnit
+            self.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
         }
 
         guard let tree = internalAU?.parameterTree else { return }
 
-        leftBoundaryConditionParameter  = tree["leftBoundaryCondition"]
+        leftBoundaryConditionParameter = tree["leftBoundaryCondition"]
         rightBoundaryConditionParameter = tree["rightBoundaryCondition"]
-        decayDurationParameter          = tree["decayDuration"]
-        scanSpeedParameter              = tree["scanSpeed"]
-        positionParameter               = tree["position"]
-        strikeVelocityParameter         = tree["strikeVelocity"]
-        strikeWidthParameter            = tree["strikeWidth"]
+        decayDurationParameter = tree["decayDuration"]
+        scanSpeedParameter = tree["scanSpeed"]
+        positionParameter = tree["position"]
+        strikeVelocityParameter = tree["strikeVelocity"]
+        strikeWidthParameter = tree["strikeWidth"]
 
         token = tree.token (byAddingParameterObserver: {
             address, value in

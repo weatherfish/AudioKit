@@ -34,11 +34,11 @@ open class AKMIDI {
     open var virtualInput = MIDIPortRef()
 
     /// MIDI Client Name
-    fileprivate var clientName: CFString = "MIDI Client" as CFString
+    private let clientName: CFString = "MIDI Client" as CFString
     
     /// MIDI In Port Name
-    internal var inputPortName: CFString = "MIDI In Port" as CFString
-    
+    internal let inputPortName: CFString = "MIDI In Port" as CFString
+
     /// MIDI Out Port Reference
     internal var outputPort = MIDIPortRef()
 
@@ -64,11 +64,16 @@ open class AKMIDI {
             MIDINetworkSession.default().connectionPolicy =
                 MIDINetworkConnectionPolicy.anyone
         #endif
-        var result = noErr
+
         if client == 0 {
-            result = MIDIClientCreateWithBlock(clientName, &client, MyMIDINotifyBlock)
+            let result = MIDIClientCreateWithBlock(clientName, &client) {
+                guard $0.pointee.messageID == .msgSetupChanged else { return }
+                for l in self.listeners {
+                    l.receivedMIDISetupChange()
+                }
+            }
             if result != noErr {
-                print("Error creating midi client : \(result)")
+                AKLog("Error creating midi client : \(result)")
             }
         }
     }
@@ -76,30 +81,30 @@ open class AKMIDI {
     // MARK: - Virtual MIDI
     
     /// Create set of virtual MIDI ports
-    open func createVirtualPorts(_ uniqueId: Int32 = 2000000) {
+    open func createVirtualPorts(_ uniqueID: Int32 = 2000000) {
         destroyVirtualPorts()
 
-        var result = MIDIDestinationCreateWithBlock(client, clientName, &virtualInput) { packetList, srcConnRefCon in
+        var result = MIDIDestinationCreateWithBlock(client, clientName, &virtualInput) { packetList, _ in
             for packet in packetList.pointee {
                 // a coremidi packet may contain multiple midi events
                 for event in packet {
-                    self.handleMidiMessage(event)
+                    self.handleMIDIMessage(event)
                 }
             }
         }
         
         if result == noErr {
-            MIDIObjectSetIntegerProperty(virtualInput, kMIDIPropertyUniqueID, uniqueId)
+            MIDIObjectSetIntegerProperty(virtualInput, kMIDIPropertyUniqueID, uniqueID)
         } else {
-            print("Error creatervirt dest: \(clientName) -- \(virtualInput)")
+            AKLog("Error creatervirt dest: \(clientName) -- \(virtualInput)")
         }
         
         
         result = MIDISourceCreate(client, clientName, &virtualOutput)
         if result == noErr {
-            MIDIObjectSetIntegerProperty(virtualInput, kMIDIPropertyUniqueID, uniqueId + 1)
+            MIDIObjectSetIntegerProperty(virtualInput, kMIDIPropertyUniqueID, uniqueID + 1)
         } else {
-            print("Error creating virtual source: \(clientName) -- \(virtualOutput)")
+            AKLog("Error creating virtual source: \(clientName) -- \(virtualOutput)")
         }
     }
     

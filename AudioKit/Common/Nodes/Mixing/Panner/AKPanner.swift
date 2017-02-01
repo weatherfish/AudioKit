@@ -10,28 +10,21 @@ import AVFoundation
 
 /// Stereo Panner
 ///
-/// - Parameters:
-///   - input: Input node to process
-///   - pan: Panning. A value of -1 is hard left, and a value of 1 is hard right, and 0 is center.
-///
 open class AKPanner: AKNode, AKToggleable, AKComponent {
     public typealias AKAudioUnitType = AKPannerAudioUnit
-    static let ComponentDescription = AudioComponentDescription(effect: "pan2")
+    public static let ComponentDescription = AudioComponentDescription(effect: "pan2")
 
     // MARK: - Properties
 
-    internal var internalAU: AKAudioUnitType?
-    internal var token: AUParameterObserverToken?
+    private var internalAU: AKAudioUnitType?
+    private var token: AUParameterObserverToken?
 
     fileprivate var panParameter: AUParameter?
 
     /// Ramp Time represents the speed at which parameters are allowed to change
     open var rampTime: Double = AKSettings.rampTime {
         willSet {
-            if rampTime != newValue {
-                internalAU?.rampTime = newValue
-                internalAU?.setUpParameterRamp()
-            }
+            internalAU?.rampTime = newValue
         }
     }
 
@@ -70,15 +63,12 @@ open class AKPanner: AKNode, AKToggleable, AKComponent {
         _Self.register()
 
         super.init()
-        AVAudioUnit.instantiate(with: _Self.ComponentDescription, options: []) {
-            avAudioUnit, error in
+        AVAudioUnit._instantiate(with: _Self.ComponentDescription) {
+            avAudioUnit in
 
-            guard let avAudioUnitEffect = avAudioUnit else { return }
+            self.avAudioNode = avAudioUnit
+            self.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
 
-            self.avAudioNode = avAudioUnitEffect
-            self.internalAU = avAudioUnitEffect.auAudioUnit as? AKAudioUnitType
-
-            AudioKit.engine.attach(self.avAudioNode)
             input.addConnectionPoint(self)
         }
 

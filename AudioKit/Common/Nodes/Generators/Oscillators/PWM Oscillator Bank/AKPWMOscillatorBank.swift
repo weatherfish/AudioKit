@@ -10,23 +10,14 @@ import AVFoundation
 
 /// Pulse-Width Modulating Oscillator Bank
 ///
-/// - Parameters:
-///   - pulseWidth: Duty cycle width (range 0-1).
-///   - attackDuration: Attack time
-///   - decayDuration: Decay time
-///   - sustainLevel: Sustain Level
-///   - releaseDuration: Release time
-///   - detuningOffset: Frequency offset in Hz.
-///   - detuningMultiplier: Frequency detuning multiplier
-///
 open class AKPWMOscillatorBank: AKPolyphonicNode, AKComponent {
     public typealias AKAudioUnitType = AKPWMOscillatorBankAudioUnit
-    static let ComponentDescription = AudioComponentDescription(generator: "pwmb")
+    public static let ComponentDescription = AudioComponentDescription(generator: "pwmb")
 
     // MARK: - Properties
 
-    internal var internalAU: AKAudioUnitType?
-    internal var token: AUParameterObserverToken?
+    private var internalAU: AKAudioUnitType?
+    private var token: AUParameterObserverToken?
 
     fileprivate var pulseWidthParameter: AUParameter?
     fileprivate var attackDurationParameter: AUParameter?
@@ -39,10 +30,7 @@ open class AKPWMOscillatorBank: AKPolyphonicNode, AKComponent {
     /// Ramp Time represents the speed at which parameters are allowed to change
     open var rampTime: Double = AKSettings.rampTime {
         willSet {
-            if rampTime != newValue {
-                internalAU?.rampTime = newValue
-                internalAU?.setUpParameterRamp()
-            }
+            internalAU?.rampTime = newValue
         }
     }
 
@@ -175,15 +163,11 @@ open class AKPWMOscillatorBank: AKPolyphonicNode, AKComponent {
         _Self.register()
 
         super.init()
-        AVAudioUnit.instantiate(with: _Self.ComponentDescription, options: []) {
-            avAudioUnit, error in
+        AVAudioUnit._instantiate(with: _Self.ComponentDescription) {
+            avAudioUnit in
 
-            guard let avAudioUnitGenerator = avAudioUnit else { return }
-
-            self.avAudioNode = avAudioUnitGenerator
-            self.internalAU = avAudioUnitGenerator.auAudioUnit as? AKAudioUnitType
-
-            AudioKit.engine.attach(self.avAudioNode)
+            self.avAudioNode = avAudioUnit
+            self.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
         }
 
         guard let tree = internalAU?.parameterTree else { return }

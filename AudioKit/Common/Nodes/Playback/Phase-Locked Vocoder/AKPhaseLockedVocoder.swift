@@ -12,20 +12,14 @@ import AVFoundation
 /// file loaded into an ftable like a sampler would. Unlike a typical sampler,
 /// mincer allows time and pitch to be controlled separately.
 ///
-/// - Parameters:
-///   - audioFileURL: Location of the audio file to use.
-///   - position: Position in time. When non-changing it will do a spectral freeze of a the current point in time.
-///   - amplitude: Amplitude.
-///   - pitchRatio: Pitch ratio. A value of. 1  normal, 2 is double speed, 0.5 is halfspeed, etc.
-///
 open class AKPhaseLockedVocoder: AKNode, AKComponent {
     public typealias AKAudioUnitType = AKPhaseLockedVocoderAudioUnit
-    static let ComponentDescription = AudioComponentDescription(generator: "minc")
+    public static let ComponentDescription = AudioComponentDescription(generator: "minc")
 
     // MARK: - Properties
 
-    internal var internalAU: AKAudioUnitType?
-    internal var token: AUParameterObserverToken?
+    private var internalAU: AKAudioUnitType?
+    private var token: AUParameterObserverToken?
 
     fileprivate var positionParameter: AUParameter?
     fileprivate var amplitudeParameter: AUParameter?
@@ -34,10 +28,7 @@ open class AKPhaseLockedVocoder: AKNode, AKComponent {
     /// Ramp Time represents the speed at which parameters are allowed to change
     open var rampTime: Double = AKSettings.rampTime {
         willSet {
-            if rampTime != newValue {
-                internalAU?.rampTime = newValue
-                internalAU?.setUpParameterRamp()
-            }
+            internalAU?.rampTime = newValue
         }
     }
 
@@ -112,15 +103,11 @@ open class AKPhaseLockedVocoder: AKNode, AKComponent {
 
         super.init()
 
-        AVAudioUnit.instantiate(with: _Self.ComponentDescription, options: []) {
-            avAudioUnit, error in
+        AVAudioUnit._instantiate(with: _Self.ComponentDescription) {
+            avAudioUnit in
 
-            guard let avAudioUnitGenerator = avAudioUnit else { return }
-
-            self.avAudioNode = avAudioUnitGenerator
-            self.internalAU = avAudioUnitGenerator.auAudioUnit as? AKAudioUnitType
-
-            AudioKit.engine.attach(self.avAudioNode)
+            self.avAudioNode = avAudioUnit
+            self.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
         }
 
         guard let tree = internalAU?.parameterTree else { return }
@@ -161,11 +148,11 @@ open class AKPhaseLockedVocoder: AKNode, AKComponent {
             var theOutputFormat: AudioStreamBasicDescription = AudioStreamBasicDescription()
 
             err = ExtAudioFileOpenURL(self.avAudiofile.url as CFURL, &extRef)
-            if err != 0 { print("ExtAudioFileOpenURL FAILED, Error = \(err)"); break Exit }
+            if err != 0 { AKLog("ExtAudioFileOpenURL FAILED, Error = \(err)"); break Exit }
             // Get the audio data format
             err = ExtAudioFileGetProperty(extRef!, kExtAudioFileProperty_FileDataFormat, &thePropertySize, &theFileFormat)
-            if err != 0 { print("ExtAudioFileGetProperty(kExtAudioFileProperty_FileDataFormat) FAILED, Error = \(err)"); break Exit }
-            if theFileFormat.mChannelsPerFrame > 2 { print("Unsupported Format, channel count is greater than stereo"); break Exit }
+            if err != 0 { AKLog("ExtAudioFileGetProperty(kExtAudioFileProperty_FileDataFormat) FAILED, Error = \(err)"); break Exit }
+            if theFileFormat.mChannelsPerFrame > 2 { AKLog("Unsupported Format, channel count is greater than stereo"); break Exit }
 
             theOutputFormat.mSampleRate = AKSettings.sampleRate
             theOutputFormat.mFormatID = kAudioFormatLinearPCM
@@ -178,12 +165,12 @@ open class AKPhaseLockedVocoder: AKNode, AKComponent {
 
             // Set the desired client (output) data format
             err = ExtAudioFileSetProperty(extRef!, kExtAudioFileProperty_ClientDataFormat, UInt32(MemoryLayout.stride(ofValue: theOutputFormat)), &theOutputFormat)
-            if err != 0 { print("ExtAudioFileSetProperty(kExtAudioFileProperty_ClientDataFormat) FAILED, Error = \(err)"); break Exit }
+            if err != 0 { AKLog("ExtAudioFileSetProperty(kExtAudioFileProperty_ClientDataFormat) FAILED, Error = \(err)"); break Exit }
 
             // Get the total frame count
             thePropertySize = UInt32(MemoryLayout.stride(ofValue: theFileLengthInFrames))
             err = ExtAudioFileGetProperty(extRef!, kExtAudioFileProperty_FileLengthFrames, &thePropertySize, &theFileLengthInFrames)
-            if err != 0 { print("ExtAudioFileGetProperty(kExtAudioFileProperty_FileLengthFrames) FAILED, Error = \(err)"); break Exit }
+            if err != 0 { AKLog("ExtAudioFileGetProperty(kExtAudioFileProperty_FileLengthFrames) FAILED, Error = \(err)"); break Exit }
 
             // Read all the data into memory
             let dataSize = UInt32(theFileLengthInFrames) * theOutputFormat.mBytesPerFrame
@@ -207,7 +194,7 @@ open class AKPhaseLockedVocoder: AKNode, AKComponent {
                     // failure
                     theData?.deallocate(capacity: Int(dataSize))
                     theData = nil // make sure to return NULL
-                    print("Error = \(err)"); break Exit;
+                    AKLog("Error = \(err)"); break Exit;
                 }
             }
         }

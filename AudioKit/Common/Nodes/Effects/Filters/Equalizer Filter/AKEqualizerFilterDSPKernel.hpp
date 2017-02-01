@@ -6,8 +6,7 @@
 //  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
 //
 
-#ifndef AKEqualizerFilterDSPKernel_hpp
-#define AKEqualizerFilterDSPKernel_hpp
+#pragma once
 
 #import "DSPKernel.hpp"
 #import "ParameterRamper.hpp"
@@ -24,20 +23,15 @@ enum {
     gainAddress = 2
 };
 
-class AKEqualizerFilterDSPKernel : public DSPKernel {
+class AKEqualizerFilterDSPKernel : public AKSporthKernel, public AKBuffered {
 public:
     // MARK: Member Functions
 
     AKEqualizerFilterDSPKernel() {}
 
-    void init(int channelCount, double inSampleRate) {
-        channels = channelCount;
+    void init(int _channels, double _sampleRate) override {
+        AKSporthKernel::init(_channels, _sampleRate);
 
-        sampleRate = float(inSampleRate);
-
-        sp_create(&sp);
-        sp->sr = sampleRate;
-        sp->nchan = channels;
         sp_eqfil_create(&eqfil);
         sp_eqfil_init(sp, eqfil);
         eqfil->freq = 1000.0;
@@ -59,7 +53,7 @@ public:
 
     void destroy() {
         sp_eqfil_destroy(&eqfil);
-        sp_destroy(&sp);
+        AKSporthKernel::destroy();
     }
 
     void reset() {
@@ -134,11 +128,6 @@ public:
         }
     }
 
-    void setBuffers(AudioBufferList *inBufferList, AudioBufferList *outBufferList) {
-        inBufferListPtr = inBufferList;
-        outBufferListPtr = outBufferList;
-    }
-
     void process(AUAudioFrameCount frameCount, AUAudioFrameCount bufferOffset) override {
 
         for (int frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
@@ -168,13 +157,7 @@ public:
     // MARK: Member Variables
 
 private:
-    int channels = AKSettings.numberOfChannels;
-    float sampleRate = AKSettings.sampleRate;
 
-    AudioBufferList *inBufferListPtr = nullptr;
-    AudioBufferList *outBufferListPtr = nullptr;
-
-    sp_data *sp;
     sp_eqfil *eqfil;
 
     float centerFrequency = 1000.0;
@@ -189,4 +172,3 @@ public:
     ParameterRamper gainRamper = 10.0;
 };
 
-#endif /* AKEqualizerFilterDSPKernel_hpp */

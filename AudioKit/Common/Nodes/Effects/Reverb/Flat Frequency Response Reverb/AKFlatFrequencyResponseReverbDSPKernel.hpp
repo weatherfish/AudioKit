@@ -6,8 +6,7 @@
 //  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
 //
 
-#ifndef AKFlatFrequencyResponseReverbDSPKernel_hpp
-#define AKFlatFrequencyResponseReverbDSPKernel_hpp
+#pragma once
 
 #import "DSPKernel.hpp"
 #import "ParameterRamper.hpp"
@@ -22,20 +21,14 @@ enum {
     reverbDurationAddress = 0
 };
 
-class AKFlatFrequencyResponseReverbDSPKernel : public DSPKernel {
+class AKFlatFrequencyResponseReverbDSPKernel : public AKSporthKernel, public AKBuffered {
 public:
     // MARK: Member Functions
 
     AKFlatFrequencyResponseReverbDSPKernel() {}
 
-    void init(int channelCount, double inSampleRate) {
-        channels = channelCount;
-
-        sampleRate = float(inSampleRate);
-
-        sp_create(&sp);
-        sp->sr = sampleRate;
-        sp->nchan = channels;
+    void init(int _channels, double _sampleRate) override {
+        AKSporthKernel::init(_channels, _sampleRate);
         sp_allpass_create(&allpass);
         sp_allpass_init(sp, allpass, internalLoopDuration);
         allpass->revtime = 0.5;
@@ -53,7 +46,7 @@ public:
 
     void destroy() {
         sp_allpass_destroy(&allpass);
-        sp_destroy(&sp);
+        AKSporthKernel::destroy();
     }
 
     void reset() {
@@ -97,11 +90,6 @@ public:
         }
     }
 
-    void setBuffers(AudioBufferList *inBufferList, AudioBufferList *outBufferList) {
-        inBufferListPtr = inBufferList;
-        outBufferListPtr = outBufferList;
-    }
-
     void process(AUAudioFrameCount frameCount, AUAudioFrameCount bufferOffset) override {
 
         for (int frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
@@ -127,13 +115,7 @@ public:
     // MARK: Member Variables
 
 private:
-    int channels = AKSettings.numberOfChannels;
-    float sampleRate = AKSettings.sampleRate;
 
-    AudioBufferList *inBufferListPtr = nullptr;
-    AudioBufferList *outBufferListPtr = nullptr;
-
-    sp_data *sp;
     sp_allpass *allpass;
 
     float reverbDuration = 0.5;
@@ -144,5 +126,3 @@ public:
     bool resetted = false;
     ParameterRamper reverbDurationRamper = 0.5;
 };
-
-#endif /* AKFlatFrequencyResponseReverbDSPKernel_hpp */

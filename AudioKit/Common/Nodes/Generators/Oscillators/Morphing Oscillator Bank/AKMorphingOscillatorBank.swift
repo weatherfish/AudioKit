@@ -11,24 +11,14 @@ import AVFoundation
 /// This is an oscillator with linear interpolation that is capable of morphing
 /// between an arbitrary number of wavetables.
 ///
-/// - Parameters:
-///   - waveform:           The waveform of oscillation
-///   - index:              Index of the wavetable to use (fractional are okay).
-///   - attackDuration:     Attack time
-///   - decayDuration:      Decay time
-///   - sustainLevel:       Sustain Level
-///   - releaseDuration:    Release time
-///   - detuningOffset:     Frequency offset in Hz.
-///   - detuningMultiplier: Frequency detuning multiplier
-///
 open class AKMorphingOscillatorBank: AKPolyphonicNode, AKComponent {
     public typealias AKAudioUnitType = AKMorphingOscillatorBankAudioUnit
-    static let ComponentDescription = AudioComponentDescription(generator: "morb")
+    public static let ComponentDescription = AudioComponentDescription(generator: "morb")
 
     // MARK: - Properties
 
-    internal var internalAU: AKAudioUnitType?
-    internal var token: AUParameterObserverToken?
+    private var internalAU: AKAudioUnitType?
+    private var token: AUParameterObserverToken?
 
     fileprivate var waveformArray = [AKTable]()
 
@@ -42,10 +32,7 @@ open class AKMorphingOscillatorBank: AKPolyphonicNode, AKComponent {
     /// Ramp Time represents the speed at which parameters are allowed to change
     open var rampTime: Double = AKSettings.rampTime {
         willSet {
-            if rampTime != newValue {
-                internalAU?.rampTime = newValue
-                internalAU?.setUpParameterRamp()
-            }
+            internalAU?.rampTime = newValue
         }
     }
 
@@ -174,15 +161,11 @@ open class AKMorphingOscillatorBank: AKPolyphonicNode, AKComponent {
         _Self.register()
 
         super.init()
-        AVAudioUnit.instantiate(with: _Self.ComponentDescription, options: []) {
-            avAudioUnit, error in
+        AVAudioUnit._instantiate(with: _Self.ComponentDescription) {
+            avAudioUnit in
+            self.avAudioNode = avAudioUnit
+            self.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
 
-            guard let avAudioUnitGenerator = avAudioUnit else { return }
-
-            self.avAudioNode = avAudioUnitGenerator
-            self.internalAU = avAudioUnitGenerator.auAudioUnit as? AKAudioUnitType
-
-            AudioKit.engine.attach(self.avAudioNode)
             for (i, waveform) in waveformArray.enumerated() {
                 self.internalAU?.setupWaveform(UInt32(i), size: Int32(UInt32(waveform.count)))
                 for (j, sample) in waveform.enumerated() {

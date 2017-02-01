@@ -10,21 +10,13 @@ import AVFoundation
 
 /// Triggerable classic ADSR envelope
 ///
-/// - Parameters:
-///   - input: Input node to process
-///   - attackDuration: Attack time
-///   - decayDuration: Decay time
-///   - sustainLevel: Sustain Level
-///   - releaseDuration: Release time
-///
 open class AKAmplitudeEnvelope: AKNode, AKToggleable, AKComponent {
     public typealias AKAudioUnitType = AKAmplitudeEnvelopeAudioUnit
-    static let ComponentDescription = AudioComponentDescription(effect: "adsr")
+    public static let ComponentDescription = AudioComponentDescription(effect: "adsr")
 
     // MARK: - Properties
-
-    internal var internalAU: AKAudioUnitType?
-    internal var token: AUParameterObserverToken?
+    private var internalAU: AKAudioUnitType?
+    private var token: AUParameterObserverToken?
 
     fileprivate var attackDurationParameter: AUParameter?
     fileprivate var decayDurationParameter: AUParameter?
@@ -34,10 +26,7 @@ open class AKAmplitudeEnvelope: AKNode, AKToggleable, AKComponent {
     /// Ramp Time represents the speed at which parameters are allowed to change
     open var rampTime: Double = AKSettings.rampTime {
         willSet {
-            if rampTime != newValue {
-                internalAU?.rampTime = newValue
-                internalAU?.setUpParameterRamp()
-            }
+            internalAU?.rampTime = newValue
         }
     }
 
@@ -120,15 +109,13 @@ open class AKAmplitudeEnvelope: AKNode, AKToggleable, AKComponent {
 
         _Self.register()
         super.init()
-        AVAudioUnit.instantiate(with: _Self.ComponentDescription, options: []) {
-            avAudioUnit, error in
 
-            guard let avAudioUnitEffect = avAudioUnit else { return }
+        AVAudioUnit._instantiate(with: _Self.ComponentDescription) {
+            avAudioUnit in
 
-            self.avAudioNode = avAudioUnitEffect
-            self.internalAU = avAudioUnitEffect.auAudioUnit as? AKAudioUnitType
+            self.avAudioNode = avAudioUnit
+            self.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
 
-            AudioKit.engine.attach(self.avAudioNode)
             input.addConnectionPoint(self)
         }
 

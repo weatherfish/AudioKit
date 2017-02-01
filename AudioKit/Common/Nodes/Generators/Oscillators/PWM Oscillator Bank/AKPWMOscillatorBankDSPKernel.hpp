@@ -6,8 +6,7 @@
 //  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
 //
 
-#ifndef AKPWMOscillatorBankDSPKernel_hpp
-#define AKPWMOscillatorBankDSPKernel_hpp
+#pragma once
 
 #import "DSPKernel.hpp"
 #import "ParameterRamper.hpp"
@@ -38,7 +37,7 @@ static inline double noteToHz(int noteNumber)
     return 440. * exp2((noteNumber - 69)/12.);
 }
 
-class AKPWMOscillatorBankDSPKernel : public DSPKernel {
+class AKPWMOscillatorBankDSPKernel : public AKSporthKernel, public AKOutputBuffered {
 public:
     // MARK: Types
     struct NoteState {
@@ -150,15 +149,9 @@ public:
         }
     }
 
-    void init(int channelCount, double inSampleRate) {
-        channels = channelCount;
+    void init(int _channels, double _sampleRate) override {
+        AKSporthKernel::init(_channels, _sampleRate);
 
-        sampleRate = float(inSampleRate);
-
-        sp_create(&sp);
-        sp->sr = sampleRate;
-        sp->nchan = channels;
-        
         pulseWidthRamper.init();
         attackDurationRamper.init();
         decayDurationRamper.init();
@@ -177,7 +170,7 @@ public:
     }
 
     void destroy() {
-        sp_destroy(&sp);
+        AKSporthKernel::destroy();
     }
 
     void reset() {
@@ -327,10 +320,6 @@ public:
 
         }
     }
-
-    void setBuffer(AudioBufferList *outBufferList) {
-        outBufferListPtr = outBufferList;
-    }
     
     virtual void handleMIDIEvent(AUMIDIEvent const& midiEvent) override {
         if (midiEvent.length != 3) return;
@@ -402,13 +391,7 @@ public:
 private:
     std::vector<NoteState> noteStates;
 
-    int channels = AKSettings.numberOfChannels;
-    float sampleRate = AKSettings.sampleRate;
     double frequencyScale = 2. * M_PI / sampleRate;
-
-    AudioBufferList *outBufferListPtr = nullptr;
-
-    sp_data *sp;
     
     float pulseWidth = 0.5;
 
@@ -438,4 +421,3 @@ public:
     ParameterRamper detuningMultiplierRamper = 1;
 };
 
-#endif /* AKPWMOscillatorBankDSPKernel_hpp */

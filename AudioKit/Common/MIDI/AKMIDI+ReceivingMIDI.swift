@@ -8,23 +8,16 @@
 
 internal struct MIDISources: Collection {
     typealias Index = Int
+    typealias Element = MIDIEndpointRef
 
     init() { }
-
-    var startIndex: Index {
-        return 0
-    }
 
     var endIndex: Index {
         return MIDIGetNumberOfSources()
     }
 
-    subscript (index: Index) -> MIDIEndpointRef {
-      return MIDIGetSource(index)
-    }
-
-    func index(after index: Index) -> Index {
-      return index + 1
+    subscript (index: Index) -> Element {
+        return MIDIGetSource(index)
     }
 }
 
@@ -67,7 +60,7 @@ extension AKMIDI {
                     for packet in packetList.pointee {
                         // a coremidi packet may contain multiple midi events
                         for event in packet {
-                            self.handleMidiMessage(event)
+                            self.handleMIDIMessage(event)
                         }
                     }
                 }
@@ -75,7 +68,7 @@ extension AKMIDI {
                 inputPorts[namedInput] = port
                 
                 if result != noErr {
-                    print("Error creating midiInPort : \(result)")
+                    AKLog("Error creating midiInPort : \(result)")
                 }
                 MIDIPortConnectSource(port, src, nil)
                 endpoints[namedInput] = src
@@ -96,7 +89,7 @@ extension AKMIDI {
                         endpoints.removeValue(forKey: namedInput)
                         inputPorts.removeValue(forKey: namedInput)
                     } else {
-                        print("Error closing midiInPort : \(result)")
+                        AKLog("Error closing midiInPort : \(result)")
                     }
                 }
             }
@@ -108,47 +101,41 @@ extension AKMIDI {
         closeInput()
     }
     
-    internal func handleMidiMessage(_ event: AKMIDIEvent) {
+    internal func handleMIDIMessage(_ event: AKMIDIEvent) {
         for listener in listeners {
+            guard let eventChannel = event.channel else { return }
             let type = event.status
             switch type {
             case .controllerChange:
                 listener.receivedMIDIController(Int(event.internalData[1]),
                                                 value: Int(event.internalData[2]),
-                                                channel: MIDIChannel(event.channel))
+                                                channel: MIDIChannel(eventChannel))
             case .channelAftertouch:
                 listener.receivedMIDIAfterTouch(Int(event.internalData[1]),
-                                                channel: MIDIChannel(event.channel))
+                                                channel: MIDIChannel(eventChannel))
             case .noteOn:
                 listener.receivedMIDINoteOn(noteNumber: MIDINoteNumber(event.internalData[1]),
                                             velocity: MIDIVelocity(event.internalData[2]),
-                                            channel: MIDIChannel(event.channel))
+                                            channel: MIDIChannel(eventChannel))
             case .noteOff:
                 listener.receivedMIDINoteOff(noteNumber: MIDINoteNumber(event.internalData[1]),
                                              velocity: MIDIVelocity(event.internalData[2]),
-                                             channel: MIDIChannel(event.channel))
+                                             channel: MIDIChannel(eventChannel))
             case .pitchWheel:
                 listener.receivedMIDIPitchWheel(Int(event.data),
-                                                channel: MIDIChannel(event.channel))
+                                                channel: MIDIChannel(eventChannel))
             case .polyphonicAftertouch:
                 listener.receivedMIDIAftertouch(noteNumber: MIDINoteNumber(event.internalData[1]),
                                                 pressure: Int(event.internalData[2]),
-                                                channel: MIDIChannel(event.channel))
+                                                channel: MIDIChannel(eventChannel))
             case .programChange:
                 listener.receivedMIDIProgramChange(Int(event.internalData[1]),
-                                                   channel: MIDIChannel(event.channel))
+                                                   channel: MIDIChannel(eventChannel))
             case .systemCommand:
                 listener.receivedMIDISystemCommand(event.internalData)
             default:
                 break
             }
         }
-    }
-    
-    internal func MyMIDINotifyBlock(_ midiNotification: UnsafePointer<MIDINotification>) {
-        _ = midiNotification.pointee
-        //do something with notification - change _ above to let varname
-        //print("MIDI Notify, messageId= \(notification.messageID.rawValue)")
-        
     }
 }

@@ -11,19 +11,13 @@ import AVFoundation
 /// These filters are Butterworth second-order IIR filters. They offer an almost
 /// flat passband and very good precision and stopband attenuation.
 ///
-/// - Parameters:
-///   - input: Input node to process
-///   - centerFrequency: Center frequency. (in Hertz)
-///   - bandwidth: Bandwidth. (in Hertz)
-///
 open class AKBandRejectButterworthFilter: AKNode, AKToggleable, AKComponent {
     public typealias AKAudioUnitType = AKBandRejectButterworthFilterAudioUnit
-    static let ComponentDescription = AudioComponentDescription(effect: "btbr")
+    public static let ComponentDescription = AudioComponentDescription(effect: "btbr")
 
     // MARK: - Properties
-
-    internal var internalAU: AKAudioUnitType?
-    internal var token: AUParameterObserverToken?
+    private var internalAU: AKAudioUnitType?
+    private var token: AUParameterObserverToken?
 
     fileprivate var centerFrequencyParameter: AUParameter?
     fileprivate var bandwidthParameter: AUParameter?
@@ -31,10 +25,8 @@ open class AKBandRejectButterworthFilter: AKNode, AKToggleable, AKComponent {
     /// Ramp Time represents the speed at which parameters are allowed to change
     open var rampTime: Double = AKSettings.rampTime {
         willSet {
-            if rampTime != newValue {
-                internalAU?.rampTime = newValue
-                internalAU?.setUpParameterRamp()
-            }
+        
+            internalAU?.rampTime = newValue
         }
     }
 
@@ -88,15 +80,12 @@ open class AKBandRejectButterworthFilter: AKNode, AKToggleable, AKComponent {
         _Self.register()
 
         super.init()
-        AVAudioUnit.instantiate(with: _Self.ComponentDescription, options: []) {
-            avAudioUnit, error in
+        AVAudioUnit._instantiate(with: _Self.ComponentDescription) {
+            avAudioUnit in
 
-            guard let avAudioUnitEffect = avAudioUnit else { return }
+            self.avAudioNode = avAudioUnit
+            self.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
 
-            self.avAudioNode = avAudioUnitEffect
-            self.internalAU = avAudioUnitEffect.auAudioUnit as? AKAudioUnitType
-
-            AudioKit.engine.attach(self.avAudioNode)
             input.addConnectionPoint(self)
         }
 
