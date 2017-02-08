@@ -3,7 +3,7 @@
 //  AudioKit
 //
 //  Created by Aurelius Prochazka, revision history on Github.
-//  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
+//  Copyright (c) 2017 Aurelius Prochazka. All rights reserved.
 //
 
 import AVFoundation
@@ -74,11 +74,11 @@ open class AKClarinet: AKNode, AKToggleable, AKComponent {
         _Self.register()
 
         super.init()
-        AVAudioUnit._instantiate(with: _Self.ComponentDescription) {
+        AVAudioUnit._instantiate(with: _Self.ComponentDescription) { [weak self]
             avAudioUnit in
 
-            self.avAudioNode = avAudioUnit
-            self.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
+            self?.avAudioNode = avAudioUnit
+            self?.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
         }
 
         guard let tree = internalAU?.parameterTree else { return }
@@ -86,14 +86,14 @@ open class AKClarinet: AKNode, AKToggleable, AKComponent {
         frequencyParameter = tree["frequency"]
         amplitudeParameter = tree["amplitude"]
 
-        token = tree.token (byAddingParameterObserver: {
+        token = tree.token (byAddingParameterObserver: { [weak self]
             address, value in
 
             DispatchQueue.main.async {
-                if address == self.frequencyParameter!.address {
-                    self.frequency = Double(value)
-                } else if address == self.amplitudeParameter!.address {
-                    self.amplitude = Double(value)
+                if address == self?.frequencyParameter!.address {
+                    self?.frequency = Double(value)
+                } else if address == self?.amplitudeParameter!.address {
+                    self?.amplitude = Double(value)
                 }
             }
         })

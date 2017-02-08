@@ -53,14 +53,15 @@ open class AKSampler: AKNode {
     ///
     /// - parameter file: Name of the file without an extension (assumed to be accessible from the bundle)
     ///
-    open func loadWav(_ file: String) {
+    open func loadWav(_ file: String) throws {
         guard let url = Bundle.main.url(forResource: file, withExtension: "wav") else {
                 fatalError("file not found.")
         }
         do {
             try samplerUnit.loadAudioFiles(at: [url])
-        } catch {
-            AKLog("Error loading wav file at the given file location.")
+        } catch let error as NSError {
+            AKLog("Error loading wav file at \(url)")
+            throw error
         }
     }
 
@@ -68,8 +69,8 @@ open class AKSampler: AKNode {
     ///
     /// - parameter file: Name of the EXS24 file without the .exs extension
     ///
-    open func loadEXS24(_ file: String) {
-        loadInstrument(file, type: "exs")
+    open func loadEXS24(_ file: String) throws {
+        try loadInstrument(file, type: "exs")
     }
 
     /// Load an AKAudioFile
@@ -80,7 +81,7 @@ open class AKSampler: AKNode {
         do {
             try samplerUnit.loadAudioFiles(at: [file.url])
         } catch let error as NSError {
-            AKLog("AKSampler Error loading \"\(file.fileNamePlusExtension)\" !...")
+            AKLog("Error loading audio file \"\(file.fileNamePlusExtension)\"")
             throw error
         }
     }
@@ -97,23 +98,24 @@ open class AKSampler: AKNode {
         do {
             try samplerUnit.loadAudioFiles(at: urls)
         } catch let error as NSError {
-            AKLog("AKSampler Error loading audioFiles !...")
+            AKLog("Error loading audio files \(urls)")
             throw error
         }
     }
 
-    fileprivate func loadSoundFont(_ file: String, preset: Int, type: Int) {
+    fileprivate func loadSoundFont(_ file: String, preset: Int, type: Int) throws {
         guard let url = Bundle.main.url(forResource: file, withExtension: "sf2") else {
             fatalError("file not found.")
         }
         do {
             try samplerUnit.loadSoundBankInstrument(
                 at: url,
-                program: UInt8(preset),
-                bankMSB: UInt8(type),
-                bankLSB: UInt8(kAUSampler_DefaultBankLSB))
-        } catch {
-            AKLog("Error loading SoundFont.")
+                program: MIDIByte(preset),
+                bankMSB: MIDIByte(type),
+                bankLSB: MIDIByte(kAUSampler_DefaultBankLSB))
+        } catch let error as NSError {
+            AKLog("Error loading SoundFont \(file)")
+            throw error
         }
     }
 
@@ -123,8 +125,8 @@ open class AKSampler: AKNode {
     ///   - file: Name of the SoundFont SF2 file without the .sf2 extension
     ///   - preset: Number of the program to use
     ///
-    open func loadMelodicSoundFont(_ file: String, preset: Int) {
-        loadSoundFont(file, preset: preset, type: kAUSampler_DefaultMelodicBankMSB)
+    open func loadMelodicSoundFont(_ file: String, preset: Int) throws {
+        try loadSoundFont(file, preset: preset, type: kAUSampler_DefaultMelodicBankMSB)
     }
 
     /// Load a Percussive SoundFont SF2 sample data file
@@ -133,8 +135,8 @@ open class AKSampler: AKNode {
     ///   - file: Name of the SoundFont SF2 file without the .sf2 extension
     ///   - preset: Number of the program to use
     ///
-    open func loadPercussiveSoundFont(_ file: String, preset: Int) {
-        loadSoundFont(file, preset: preset, type: kAUSampler_DefaultPercussionBankMSB)
+    open func loadPercussiveSoundFont(_ file: String, preset: Int) throws {
+        try loadSoundFont(file, preset: preset, type: kAUSampler_DefaultPercussionBankMSB)
     }
 
 
@@ -146,19 +148,20 @@ open class AKSampler: AKNode {
         do {
             try samplerUnit.loadInstrument(at: URL(fileURLWithPath: filePath))
         } catch {
-            AKLog("Error loading file at given file path.")
+            AKLog("Error loading audio file at \(filePath)")
         }
     }
 
-    internal func loadInstrument(_ file: String, type: String) {
+    internal func loadInstrument(_ file: String, type: String) throws {
         //AKLog("filename is \(file)")
         guard let url = Bundle.main.url(forResource: file, withExtension: type) else {
-                fatalError("file not found.")
+            fatalError("file not found.")
         }
         do {
             try samplerUnit.loadInstrument(at: url)
-        } catch {
-            AKLog("Error loading instrument.")
+        } catch let error as NSError {
+            AKLog("Error loading instrument resource \(file)")
+            throw error
         }
     }
 
@@ -194,11 +197,9 @@ open class AKSampler: AKNode {
     ///   - channel: MIDI Channnel
     ///
     open func play(noteNumber: MIDINoteNumber = 60,
-                                velocity: MIDIVelocity = 127,
-                                channel: MIDIChannel = 0) {
-        samplerUnit.startNote(UInt8(noteNumber),
-                              withVelocity: UInt8(velocity),
-                              onChannel: UInt8(channel))
+                   velocity: MIDIVelocity = 127,
+                   channel: MIDIChannel = 0) {
+        samplerUnit.startNote(noteNumber, withVelocity: velocity, onChannel: channel)
     }
 
     /// Stop a MIDI Note
@@ -208,7 +209,7 @@ open class AKSampler: AKNode {
     ///   - channel: MIDI Channnel
     ///
     open func stop(noteNumber: MIDINoteNumber = 60, channel: MIDIChannel = 0) {
-        samplerUnit.stopNote(UInt8(noteNumber), onChannel: UInt8(channel))
+        samplerUnit.stopNote(noteNumber, onChannel: channel)
     }
 
     static func getAUPresetXML() -> String {

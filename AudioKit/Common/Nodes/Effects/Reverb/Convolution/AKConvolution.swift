@@ -3,7 +3,7 @@
 //  AudioKit
 //
 //  Created by Aurelius Prochazka, revision history on Github.
-//  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
+//  Copyright (c) 2017 Aurelius Prochazka. All rights reserved.
 //
 
 import AVFoundation
@@ -46,14 +46,14 @@ open class AKConvolution: AKNode, AKToggleable, AKComponent {
         _Self.register()
 
         super.init()
-        AVAudioUnit._instantiate(with: _Self.ComponentDescription) {
+        AVAudioUnit._instantiate(with: _Self.ComponentDescription) { [weak self]
             avAudioUnit in
 
-            self.avAudioNode = avAudioUnit
-            self.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
+            self?.avAudioNode = avAudioUnit
+            self?.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
 
-            input.addConnectionPoint(self)
-            self.internalAU!.setPartitionLength(Int32(partitionLength))
+            input.addConnectionPoint(self!)
+            self?.internalAU!.setPartitionLength(Int32(partitionLength))
         }
     }
 

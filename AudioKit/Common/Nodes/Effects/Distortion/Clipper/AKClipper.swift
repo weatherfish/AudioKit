@@ -3,7 +3,7 @@
 //  AudioKit
 //
 //  Created by Aurelius Prochazka, revision history on Github.
-//  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
+//  Copyright (c) 2017 Aurelius Prochazka. All rights reserved.
 //
 
 import AVFoundation
@@ -64,23 +64,23 @@ open class AKClipper: AKNode, AKToggleable, AKComponent {
         _Self.register()
 
         super.init()
-        AVAudioUnit._instantiate(with: _Self.ComponentDescription) {
-            self.avAudioNode = $0
-            self.internalAU = $0.auAudioUnit as? AKAudioUnitType
+        AVAudioUnit._instantiate(with: _Self.ComponentDescription) { [weak self] in
+            self?.avAudioNode = $0
+            self?.internalAU = $0.auAudioUnit as? AKAudioUnitType
 
-            input.addConnectionPoint(self)
+            input.addConnectionPoint(self!)
         }
 
         guard let tree = internalAU?.parameterTree else { return }
 
         limitParameter = tree["limit"]
 
-        token = tree.token (byAddingParameterObserver: {
+        token = tree.token (byAddingParameterObserver: { [weak self]
             address, value in
 
             DispatchQueue.main.async {
-                if address == self.limitParameter!.address {
-                    self.limit = Double(value)
+                if address == self?.limitParameter!.address {
+                    self?.limit = Double(value)
                 }
             }
         })

@@ -3,7 +3,7 @@
 //  AudioKit
 //
 //  Created by Aurelius Prochazka, revision history on Github.
-//  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
+//  Copyright (c) 2017 Aurelius Prochazka. All rights reserved.
 //
 
 import AVFoundation
@@ -87,7 +87,7 @@ open class AKPhaseDistortionOscillator: AKNode, AKToggleable, AKComponent {
     }
 
 
-    /// Duty cycle width (range -1 - -1).
+    /// Duty cycle width (range -1 - 1).
     open var phaseDistortion: Double = 0.0 {
         willSet {
             if phaseDistortion != newValue {
@@ -118,7 +118,7 @@ open class AKPhaseDistortionOscillator: AKNode, AKToggleable, AKComponent {
     ///   - waveform:  The waveform of oscillation
     ///   - frequency: In cycles per second, or Hz.
     ///   - amplitude: Output amplitude
-    ///   - phaseDistortion: Duty cycle width (range 0-1).
+    ///   - phaseDistortion: Duty cycle width (range -1 - 1).
     ///   - detuningOffset: Frequency offset in Hz.
     ///   - detuningMultiplier: Frequency detuning multiplier
     ///
@@ -140,15 +140,15 @@ open class AKPhaseDistortionOscillator: AKNode, AKToggleable, AKComponent {
         _Self.register()
 
         super.init()
-        AVAudioUnit._instantiate(with: _Self.ComponentDescription) {
+        AVAudioUnit._instantiate(with: _Self.ComponentDescription) { [weak self]
             avAudioUnit in
 
-            self.avAudioNode = avAudioUnit
-            self.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
+            self?.avAudioNode = avAudioUnit
+            self?.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
 
-            self.internalAU?.setupWaveform(Int32(waveform.count))
+            self?.internalAU?.setupWaveform(Int32(waveform.count))
             for (i, sample) in waveform.enumerated() {
-                self.internalAU?.setWaveformValue(sample, at: UInt32(i))
+                self?.internalAU?.setWaveformValue(sample, at: UInt32(i))
             }
 
         }
@@ -161,20 +161,20 @@ open class AKPhaseDistortionOscillator: AKNode, AKToggleable, AKComponent {
         detuningOffsetParameter     = tree["detuningOffset"]
         detuningMultiplierParameter = tree["detuningMultiplier"]
 
-        token = tree.token (byAddingParameterObserver: {
+        token = tree.token (byAddingParameterObserver: { [weak self]
             address, value in
 
             DispatchQueue.main.async {
-                if address == self.frequencyParameter!.address {
-                    self.frequency = Double(value)
-                } else if address == self.amplitudeParameter!.address {
-                    self.amplitude = Double(value)
-                } else if address == self.phaseDistortionParameter!.address {
-                    self.phaseDistortion = Double(value)
-                } else if address == self.detuningOffsetParameter!.address {
-                    self.detuningOffset = Double(value)
-                } else if address == self.detuningMultiplierParameter!.address {
-                    self.detuningMultiplier = Double(value)
+                if address == self?.frequencyParameter!.address {
+                    self?.frequency = Double(value)
+                } else if address == self?.amplitudeParameter!.address {
+                    self?.amplitude = Double(value)
+                } else if address == self?.phaseDistortionParameter!.address {
+                    self?.phaseDistortion = Double(value)
+                } else if address == self?.detuningOffsetParameter!.address {
+                    self?.detuningOffset = Double(value)
+                } else if address == self?.detuningMultiplierParameter!.address {
+                    self?.detuningMultiplier = Double(value)
                 }
             }
         })

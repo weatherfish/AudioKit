@@ -3,7 +3,7 @@
 //  AudioKit
 //
 //  Created by Aurelius Prochazka, revision history on Github.
-//  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
+//  Copyright (c) 2017 Aurelius Prochazka. All rights reserved.
 //
 
 #pragma once
@@ -21,14 +21,14 @@ enum {
     halfPowerPointAddress = 0
 };
 
-class AKAmplitudeTrackerDSPKernel : public AKSporthKernel, public AKBuffered {
+class AKAmplitudeTrackerDSPKernel : public AKSoundpipeKernel, public AKBuffered {
 public:
     // MARK: Member Functions
 
     AKAmplitudeTrackerDSPKernel() {}
 
     void init(int _channels, double _sampleRate) override {
-        AKSporthKernel::init(_channels, _sampleRate);
+        AKSoundpipeKernel::init(_channels, _sampleRate);
         sp_rms_create(&rms);
         sp_rms_init(sp, rms);
         rms->ihp = 10;
@@ -43,8 +43,9 @@ public:
     }
 
     void destroy() {
+        //printf("AKAmplitudeTrackerDSPKernel.destroy() \n");
+        AKSoundpipeKernel::destroy();
         sp_rms_destroy(&rms);
-        AKSporthKernel::destroy();
     }
 
     void reset() {

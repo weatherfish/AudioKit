@@ -3,7 +3,7 @@
 //  AudioKit
 //
 //  Created by Aurelius Prochazka, revision history on Github.
-//  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
+//  Copyright (c) 2017 Aurelius Prochazka. All rights reserved.
 //
 
 import AVFoundation
@@ -79,13 +79,13 @@ open class AKBandPassButterworthFilter: AKNode, AKToggleable, AKComponent {
         _Self.register()
 
         super.init()
-        AVAudioUnit._instantiate(with: _Self.ComponentDescription) {
+        AVAudioUnit._instantiate(with: _Self.ComponentDescription) { [weak self]
             avAudioUnit in
 
-            self.avAudioNode = avAudioUnit
-            self.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
+            self?.avAudioNode = avAudioUnit
+            self?.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
 
-            input.addConnectionPoint(self)
+            input.addConnectionPoint(self!)
         }
 
         guard let tree = internalAU?.parameterTree else { return }
@@ -93,14 +93,14 @@ open class AKBandPassButterworthFilter: AKNode, AKToggleable, AKComponent {
         centerFrequencyParameter = tree["centerFrequency"]
         bandwidthParameter       = tree["bandwidth"]
 
-        token = tree.token (byAddingParameterObserver: {
+        token = tree.token (byAddingParameterObserver: { [weak self]
             address, value in
 
             DispatchQueue.main.async {
-                if address == self.centerFrequencyParameter!.address {
-                    self.centerFrequency = Double(value)
-                } else if address == self.bandwidthParameter!.address {
-                    self.bandwidth = Double(value)
+                if address == self?.centerFrequencyParameter!.address {
+                    self?.centerFrequency = Double(value)
+                } else if address == self?.bandwidthParameter!.address {
+                    self?.bandwidth = Double(value)
                 }
             }
         })

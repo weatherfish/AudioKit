@@ -3,7 +3,7 @@
 //  AudioKit
 //
 //  Created by Aurelius Prochazka, revision history on Github.
-//  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
+//  Copyright (c) 2017 Aurelius Prochazka. All rights reserved.
 //
 
 #pragma once
@@ -25,14 +25,14 @@ enum {
     detuningMultiplierAddress = 4
 };
 
-class AKPhaseDistortionOscillatorDSPKernel : public AKSporthKernel, public AKOutputBuffered {
+class AKPhaseDistortionOscillatorDSPKernel : public AKSoundpipeKernel, public AKOutputBuffered {
 public:
     // MARK: Member Functions
 
     AKPhaseDistortionOscillatorDSPKernel() {}
 
     void init(int _channels, double _sampleRate) override {
-        AKSporthKernel::init(_channels, _sampleRate);
+        AKSoundpipeKernel::init(_channels, _sampleRate);
 
         sp_pdhalf_create(&pdhalf);
         sp_tabread_create(&tab);
@@ -74,7 +74,7 @@ public:
         sp_ftbl_destroy(&ftbl);
         sp_tabread_destroy(&tab);
         sp_phasor_destroy(&phs);
-        AKSporthKernel::destroy();
+        AKSoundpipeKernel::destroy();
     }
 
     void reset() {

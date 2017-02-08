@@ -3,7 +3,7 @@
 //  AudioKit
 //
 //  Created by Aurelius Prochazka, revision history on Github.
-//  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
+//  Copyright (c) 2017 Aurelius Prochazka. All rights reserved.
 //
 
 #pragma once
@@ -22,14 +22,14 @@ enum {
     pitchRatioAddress = 2
 };
 
-class AKPhaseLockedVocoderDSPKernel : public AKSporthKernel, public AKOutputBuffered {
+class AKPhaseLockedVocoderDSPKernel : public AKSoundpipeKernel, public AKOutputBuffered {
 public:
     // MARK: Member Functions
 
     AKPhaseLockedVocoderDSPKernel() {}
 
     void init(int _channels, double _sampleRate) override {
-        AKSporthKernel::init(_channels, _sampleRate);
+        AKSoundpipeKernel::init(_channels, _sampleRate);
 
         sp_mincer_create(&mincer);
 
@@ -58,7 +58,7 @@ public:
 
     void destroy() {
         sp_mincer_destroy(&mincer);
-        AKSporthKernel::destroy();
+        AKSoundpipeKernel::destroy();
     }
 
     void reset() {
